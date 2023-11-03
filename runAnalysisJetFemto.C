@@ -14,13 +14,12 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #include "AliESDInputHandler.h"
 #include "AliAnalysisTaskJetFemto.h"
 #endif
-
 //================================================================================================================
 
-//Definitions (like setting variables but different)
+//Definitions
 #define ALIPHYSICS_VER  "vAN-20220531_ROOT6-1"
 #define GRIDWorkingDir  "ANTIPROTONS_MATCHING_EFFICIENCY_DATA"
-#define AnalysisMacro   "AnalysisJetFemto"
+#define AnalysisMacro   "AnalysisAntiProtons"
 #define AnalysisTask    "AliAnalysisTaskJetFemto"
 #define TTL             20000
 #define nRunsPerMaster  1
@@ -31,27 +30,27 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr);
 void EventHandler     (AliAnalysisManager *mgr);
 void LoadPhysicsSelection();
 void LoadPIDResponse();
-//void LoadCentrality();
+void LoadCentrality();
 void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode);
 
 //Test
 Bool_t test = (kFALSE);
 
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
 void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
 
     //Run Mode
-    //Bool_t isITSrecalib = (kFALSE);
-    //Bool_t runData      = (kFALSE);
-    //Bool_t matchingEff  = (kTRUE);
+    Bool_t isITSrecalib = (kFALSE);
+    Bool_t runData      = (kFALSE);
+    Bool_t matchingEff  = (kTRUE);
 
     //ITS recalibration map
-    //TFile *inputfile = TFile::Open ("alien:///alice/cern.ch/user/a/alcaliva/nSigmaITS_Recalib/ITSrecalibrationMaps_data.root");
-    //TH2F *hITSnsigma_Mean  = (TH2F*)inputfile->Get ("hITSnsigma_Mean");
-    //TH2F *hITSnsigma_Width = (TH2F*)inputfile->Get ("hITSnsigma_Width");
+    TFile *inputfile = TFile::Open ("alien:///alice/cern.ch/user/a/alcaliva/nSigmaITS_Recalib/ITSrecalibrationMaps_data.root");
+    TH2F *hITSnsigma_Mean  = (TH2F*)inputfile->Get ("hITSnsigma_Mean");
+    TH2F *hITSnsigma_Width = (TH2F*)inputfile->Get ("hITSnsigma_Width");
 
     //Load Analysis Task
-    gROOT->LoadMacro("AliAnalysisTaskJetFemto.cxx++g");
+    gROOT->LoadMacro("AliAnalysisTaskJetFemto.cxx+g");
 
     //Input container
     AliAnalysisDataContainer *input = mgr -> GetCommonInputContainer();
@@ -62,105 +61,103 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
     //Analysis Task
     AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_AntiProtons_vs_y");
     task -> SelectCollisionCandidates (AliVEvent::kINT7);
-    //task -> AliAnalysisTaskJetFemto::SetITSRecalibrationMaps (hITSnsigma_Mean,hITSnsigma_Width);
-    //task -> AliAnalysisTaskJetFemto::SetRunningMode(isITSrecalib,runData,matchingEff);
+    task -> AliAnalysisTaskJetFemto::SetITSRecalibrationMaps (hITSnsigma_Mean,hITSnsigma_Width);
+    task -> AliAnalysisTaskJetFemto::SetRunningMode(isITSrecalib,runData,matchingEff);
     mgr -> AddTask(task);
     mgr -> ConnectInput (task,0,mgr->GetCommonInputContainer());
     mgr -> ConnectOutput(task,1,mgr->CreateContainer("Antiprotons", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
     mgr -> ConnectOutput(task,2,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
 }
-//___________________________________________________________________________________________________________________________________________
-//___________________________________________________________________________________________________________________________________________
-void addTaskJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=kTRUE)  { // THIS is the part that actually gets executed.
+//______________________________________________________________________________________________________________________________________________________
+void runAnalysisJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=kTRUE)  {
 
-    //Grid Connection so that we can even think about retrieving the data
+    //Grid Connection
     TGrid::Connect("alien://");
 
-    //Alien Handler (create alien handler instance)
+    //Alien Handler
     AliAnalysisGrid *alienHandler = CreateAlienHandler (iChunk,mode,merge);
     if (!alienHandler) return;
 
-    //Analysis Manager (literally manages the analysis on an organisational level)
+    //Analysis Manager
     AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisManager");
     mgr->SetGridHandler(alienHandler);
 
     //Event Handler, PID & Centrality
     EventHandler(mgr);
     LoadPhysicsSelection ();
-    //LoadCentrality ();
+    LoadCentrality ();
     LoadPIDResponse();
 
     //Analysis Task
-    LoadAnalysisTask(iChunk,mgr); // pulls the source files
+    LoadAnalysisTask(iChunk,mgr);
 
     //Start analysis
     if (!mgr->InitAnalysis())  return;
     mgr->PrintStatus();
     mgr->StartAnalysis("grid");
 };
-//___________________________________________________________________________________________________________________________________________
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
 AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merge )  {
 
-    //Alien Handler (creates new environment for this specific analysis, I think? And then we can set all sorts of "organisational" parameters)
-    AliAnalysisAlien *alien = new AliAnalysisAlien();                           //create new alien plugin and afterwards set all its attributes
-    alien->SetOverwriteMode();                                                  // I'm assuming whether to overwrite output files when creating a new merged file?
+    //Alien Handler
+    AliAnalysisAlien *alien = new AliAnalysisAlien();
+    alien->SetOverwriteMode();
     alien->SetCheckCopy(kFALSE);
-    alien->SetRunMode(mode);                                                    //full, terminate or test
-    alien->SetNtestFiles(10);                                                   //number of test files
+    alien->SetRunMode(mode);
+    alien->SetNtestFiles(10);
     alien->SetAPIVersion("V1.1x");
     alien->SetAliPhysicsVersion(ALIPHYSICS_VER);
-    alien->AddIncludePath("$ALICE_PHYSICS/include");                            //headers directory
-    alien->AddIncludePath("$ALICE_ROOT/include");                               //headers directory
-    alien->SetGridDataDir("/alice/data/2018/LHC18m");                           //input data
-    alien->SetDataPattern("/pass2/*/AliESDs.root");                             //specify file name pattern (or folder name ig)
-    alien->SetRunPrefix("000");                                                  // "000" = data, nothing = MC
+    alien->AddIncludePath("$ALICE_PHYSICS/include");
+    alien->AddIncludePath("$ALICE_ROOT/include");
+    alien->SetGridDataDir("/alice/data/2018/LHC18m");
+    alien->SetDataPattern("/pass2/*/AliESDs.root");
+    alien->SetRunPrefix("000");
     SetInputRuns (iChunk,alien,mode);
     alien->SetNrunsPerMaster(nRunsPerMaster);
-    alien->SetGridWorkingDir(Form("%s_%d",GRIDWorkingDir,iChunk));              //set working directory, make sure new folder name is used
-    alien->SetGridOutputDir("OUTPUT");                                          //set output directory, make sure new folder name is used
-    alien->SetAnalysisSource(Form("%s.cxx",AnalysisTask));                      //source files directory
-    alien->SetAdditionalLibs(Form("%s.cxx  %s.h",AnalysisTask,AnalysisTask));   //source files directory
-    alien->SetMergeViaJDL(merge);                                               //merge output or no
+    alien->SetGridWorkingDir(Form("%s_%d",GRIDWorkingDir,iChunk));
+    alien->SetGridOutputDir("OUTPUT");
+    alien->SetAnalysisSource(Form("%s.cxx",AnalysisTask));
+    alien->SetAdditionalLibs(Form("%s.cxx  %s.h",AnalysisTask,AnalysisTask));
+    alien->SetMergeViaJDL(merge);
     alien->SetMaxMergeStages(2);
     alien->SetAnalysisMacro(Form("%s_%d.C",AnalysisMacro,iChunk));
-    alien->SetSplitMaxInputFileNumber(50);                                      //number of files per subjob
+    alien->SetSplitMaxInputFileNumber(50);
     alien->SetMasterResubmitThreshold(90);
-    alien->SetTTL(TTL);                                                         //time before individual job is killed
-    alien->SetExecutable(Form("%s_%d.sh",AnalysisMacro,iChunk));                //name scripts
-    alien->SetInputFormat("xml-single");                                        // idk but the job ID is stored in an xml file
-    alien->SetJDLName(Form("%s_%d.jdl",AnalysisMacro,iChunk));                  //name scripts
+    alien->SetTTL(TTL);
+    alien->SetExecutable(Form("%s_%d.sh",AnalysisMacro,iChunk));
+    alien->SetInputFormat("xml-single");
+    alien->SetJDLName(Form("%s_%d.jdl",AnalysisMacro,iChunk));
     alien->SetMergeExcludes("EventStat_temp.root");
     alien->SetPrice(1);
     alien->SetSplitMode("se");
     return alien;
 }
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
 void EventHandler (AliAnalysisManager *mgr)  {
 
-    AliESDInputHandler *inputH = new AliESDInputHandler(); //makes event summary data usable
+    AliESDInputHandler *inputH = new AliESDInputHandler();
     mgr->SetInputEventHandler(inputH);
 }
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
 void LoadPhysicsSelection()  {
 
     Bool_t isMC = kFALSE;
-    AliPhysicsSelectionTask *PhySel = AddTaskPhysicsSelection(isMC); //helps select data and ensure quality
+    AliPhysicsSelectionTask *PhySel = AddTaskPhysicsSelection(isMC);
 }
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
 void LoadPIDResponse ()  {
 
     Bool_t isMC = kFALSE;
-    AliAnalysisTaskPIDResponse *pidTask = AddTaskPIDResponse(isMC); //helps identify particles
+    AliAnalysisTaskPIDResponse *pidTask = AddTaskPIDResponse(isMC);
 }
-//___________________________________________________________________________________________________________________________________________
-/*void LoadCentrality()  {
+//______________________________________________________________________________________________________________________________________________________
+void LoadCentrality()  {
 
     Bool_t lCalibration = kFALSE;
-    AliMultSelectionTask *MultSelTask = AddTaskMultSelection(lCalibration); //helps with multiplicity selection
-}*/
-//___________________________________________________________________________________________________________________________________________
-void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  { // select which runs you actually want to analyse
+    AliMultSelectionTask *MultSelTask = AddTaskMultSelection(lCalibration);
+}
+//______________________________________________________________________________________________________________________________________________________
+void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  {
 
     //Run List: RunList_LHC18m_pass2_CentralBarrelTracking_electronPID.txt
     Int_t run0[] = { 292839, 292836, 292834, 292832, 292831, 292811, 292810, 292809, 292804, 292803, 292752, 292750, 292748, 292747, 292744, 292739, 292737, 292704, 292701, 292698, 292696, 292695, 292693, 292586, 292584, 292563, 292560, 292559, 292557, 292554, 292553, 292526, 292524, 292523, 292521, 292500, 292497, 292496, 292495, 292457, 292456, 292434, 292432, 292430, 292429, 292428, 292406, 292405, 292398, 292397, 292298, 292273, 292265, 292242, 292241, 292240, 292192, 292168, 292167, 292166, 292164, 292163, 292162, 292161, 292160, 292140, 292115, 292114
@@ -181,9 +178,9 @@ void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  { /
     //if (test) nRuns=1;
     for ( Int_t iRun=0 ; iRun<nRuns ; iRun++ )  {
 
-        if (iChunk==0) alien->AddRunNumber(run0[iRun]); //add all relevant run numbers to alien plugin (s. CreateAlienHandler)
+        if (iChunk==0) alien->AddRunNumber(run0[iRun]);
         if (iChunk==1) alien->AddRunNumber(run1[iRun]);
         if (iChunk==2) alien->AddRunNumber(run2[iRun]);
     }
 }
-//___________________________________________________________________________________________________________________________________________
+//______________________________________________________________________________________________________________________________________________________
