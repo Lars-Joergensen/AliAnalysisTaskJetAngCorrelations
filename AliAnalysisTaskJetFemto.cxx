@@ -380,8 +380,8 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         if (posTrack->GetID()  == negTrack->GetID() ) continue;
 
         //Track Quality Cuts
-        if (!PassedV0Selection(V0)) continue;
-        if (!PassedTrackSelectionV0daugh (negTrack)) continue;
+        //if (!PassedV0Selection(V0)) continue;
+        //if (!PassedTrackSelectionV0daugh (negTrack)) continue;
 
         //Store Candidate IDs
         if (PassedAntiLambdaSelection(V0)) prot_ID.push_back(V0->GetNindex());
@@ -526,7 +526,7 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
     return kTRUE;
 }
 //______________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::PassedV0Selection (AliESDv0 *V0)  {
+/* Bool_t AliAnalysisTaskJetFemto::PassedV0Selection (AliESDv0 *V0)  {
 
     //Initialization
     Bool_t passedV0Selection=(kFALSE);
@@ -546,9 +546,9 @@ Bool_t AliAnalysisTaskJetFemto::PassedV0Selection (AliESDv0 *V0)  {
 
     passedV0Selection=kTRUE;
     return passedV0Selection;
-}
+}*/
 //______________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::PassedTrackSelectionV0daugh (AliESDtrack *track)  {
+/* Bool_t AliAnalysisTaskJetFemto::PassedTrackSelectionV0daugh (AliESDtrack *track)  {
 
     //Initialization
     Bool_t passedTrkSelection=(kFALSE);
@@ -564,7 +564,7 @@ Bool_t AliAnalysisTaskJetFemto::PassedTrackSelectionV0daugh (AliESDtrack *track)
 
     passedTrkSelection = kTRUE;
     return passedTrkSelection;
-}
+} */
 //_____________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
 

@@ -63,8 +63,8 @@ public:
     Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
     Double_t GetRecalibratedITSnsigma    (Double_t nsigma, Double_t eta, Double_t p);
     Bool_t   IsPionCandidate             (AliESDtrack *track);
-    Bool_t   PassedV0Selection           (AliESDv0 *V0);
-    Bool_t   PassedTrackSelectionV0daugh (AliESDtrack *track);
+    //Bool_t   PassedV0Selection           (AliESDv0 *V0);
+    //Bool_t   PassedTrackSelectionV0daugh (AliESDtrack *track);
     Bool_t   PassedAntiLambdaSelection   (AliESDv0 *V0);
     Double_t GetDecayLengthV0            (AliESDv0 *V0);
     Double_t MassLambda                  (TVector3 Ppion, TVector3 Pprot);
