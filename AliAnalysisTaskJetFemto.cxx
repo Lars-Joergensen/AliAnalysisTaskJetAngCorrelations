@@ -317,7 +317,7 @@ void AliAnalysisTaskJetFemto::RunData()  {
         for (Int_t isyst=0 ; isyst<50 ; isyst++)  {
 
             //Track Quality Cuts
-            if (!PassedTrackSelection (track,isyst)) continue;
+            //if (!PassedTrackSelection (track,isyst)) continue;
 
             //Variables
             Double_t var_dca[4] = {static_cast<double>(isyst)+0.5,TMath::Abs(y),pt,DCAxy};
@@ -395,7 +395,7 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         AliESDtrack *track = static_cast<AliESDtrack*>(fESDEvent->GetTrack(prot_ID[i]));
         if (track->Pt()>2.0)   continue;
         if (track->Charge()>0) continue;
-        if (!PassedTrackSelection (track,0)) continue;
+        //if (!PassedTrackSelection (track,0)) continue;
         Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
         if (TMath::Abs(DCAxy)>0.1) continue;
 
@@ -507,7 +507,7 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
         AliESDtrack *track = (AliESDtrack*) fESDEvent->GetTrack(i);
         if (!track) continue;
 
-        if (!PassedTrackSelection (track,0)) continue;
+        //if (!PassedTrackSelection (track,0)) continue;
         mult++;
     }
 
@@ -525,46 +525,6 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
 
     return kTRUE;
 }
-//______________________________________________________________________________________________________________________________________
-/* Bool_t AliAnalysisTaskJetFemto::PassedV0Selection (AliESDv0 *V0)  {
-
-    //Initialization
-    Bool_t passedV0Selection=(kFALSE);
-
-    //Primary Vertex
-    AliESDVertex *primaryVertex = (AliESDVertex*) fESDEvent->GetPrimaryVertex();
-    Double_t vx = primaryVertex->GetX();
-    Double_t vy = primaryVertex->GetY();
-    Double_t vz = primaryVertex->GetZ();
-
-    //Pair Cuts
-    if (V0->GetD(vx,vy,vz) > 1.0 )                 return passedV0Selection;
-    if (V0->GetDcaV0Daughters() > 0.5)             return passedV0Selection;
-    if (V0->GetV0CosineOfPointingAngle() < 0.999)  return passedV0Selection;
-    if (V0->GetChi2V0() > 10.0)                    return passedV0Selection;
-    if (GetDecayLengthV0(V0)<0.5)                  return passedV0Selection;
-
-    passedV0Selection=kTRUE;
-    return passedV0Selection;
-}*/
-//______________________________________________________________________________________________________________________________________
-/* Bool_t AliAnalysisTaskJetFemto::PassedTrackSelectionV0daugh (AliESDtrack *track)  {
-
-    //Initialization
-    Bool_t passedTrkSelection=(kFALSE);
-
-    //ITS PID
-    if (!track->HasPointOnITSLayer(2)) return passedTrkSelection;
-    if (!track->HasPointOnITSLayer(3)) return passedTrkSelection;
-    if (!track->HasPointOnITSLayer(4)) return passedTrkSelection;
-    if (!track->HasPointOnITSLayer(5)) return passedTrkSelection;
-
-    if ( track->GetTPCsignalN() < 70 )                 return passedTrkSelection;
-    if ( !fESDtrackCuts_V0daugh->AcceptTrack (track) ) return passedTrkSelection;
-
-    passedTrkSelection = kTRUE;
-    return passedTrkSelection;
-} */
 //_____________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
 
@@ -646,7 +606,7 @@ Double_t AliAnalysisTaskJetFemto::MassLambda (TVector3 Ppion, TVector3 Pprot)  {
     return mass;
 }
 //__________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliESDtrack *track, Int_t isyst)  {
+/* Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliESDtrack *track, Int_t isyst)  {
 
     //Initialization
     Bool_t passedTrkSelection=(kFALSE);
@@ -661,7 +621,7 @@ Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliESDtrack *track, Int_t 
 
     //Track Variables
     Int_t nTPCcr      = track->GetTPCCrossedRows();
-    Int_t nTPCfind    = track->GetTPCNclsF();
+    Int_t nTPCfind     = track->GetTPCNclsF();
     Int_t nITScls     = track->GetITSNcls();
     Int_t nTPCcls     = track->GetTPCNcls();
     Int_t nTPCclsdEdx = track->GetTPCsignalN();
@@ -691,14 +651,14 @@ Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliESDtrack *track, Int_t 
     if (nTPCcr<nTPCcr_min[isyst])                     return passedTrkSelection;
     if (nITScls<nITScls_min[isyst])                   return passedTrkSelection;
     if (nTPCclsdEdx<nTPCclsdEdx_min[isyst])           return passedTrkSelection;
-    if (cr_over_findable<cr_over_findable_min[isyst]) return passedTrkSelection;
+    if (cr_over_findable<cr_over_findable_min[isyst])   return passedTrkSelection;
     if (chi2TPC_NDF>chi2TPC_NDF_max[isyst])           return passedTrkSelection;
     if (chi2ITS>chi2ITS_max[isyst])                   return passedTrkSelection;
     if (DCAz>dcaz_max[isyst])                         return passedTrkSelection;
 
     passedTrkSelection = kTRUE;
     return passedTrkSelection;
-}
+} */
 //__________________________________________________________________________________________________________________________________
 Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
 
@@ -707,7 +667,7 @@ Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
 
     Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
 
-    if (!PassedTrackSelection(track,0)) return isProton;
+    //if (!PassedTrackSelection(track,0)) return isProton;
     if (!IsHighPurityProton(track))     return isProton;
     if (TMath::Abs(DCAxy)>0.1)          return isProton;
     if (track->P()>1.0)                 return isProton;

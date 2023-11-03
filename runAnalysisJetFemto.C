@@ -18,8 +18,8 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 
 //Definitions
 #define ALIPHYSICS_VER  "vAN-20220531_ROOT6-1"
-#define GRIDWorkingDir  "ANTIPROTONS_MATCHING_EFFICIENCY_DATA"
-#define AnalysisMacro   "AnalysisAntiProtons"
+#define GRIDWorkingDir  "JET_FEMTOSCOPY_WORKING_DIR"
+#define AnalysisMacro   "AnalysisJetFemtoscopy"
 #define AnalysisTask    "AliAnalysisTaskJetFemto"
 #define TTL             20000
 #define nRunsPerMaster  1
