@@ -287,19 +287,18 @@ void AliAnalysisTaskJetFemto::RunData()  {
         Double_t pt        = track->Pt();
         Double_t p         = track->P();
         Double_t y         = GetRapidity(track,mass);
-        Double_t DCAxy     = GetDCAtoPrimaryVertex (track,0);
         Bool_t   hasTOFhit = (track->GetStatus() & AliVTrack::kTOFout) && (track->GetStatus() & AliVTrack::kTIME);
         Double_t length    = track->GetIntegratedLength();
 
         //ITS Recalibration
-        Double_t nsigmaITS_recalib = GetRecalibratedITSnsigma (nsigmaITS,eta,p);
+        // Double_t nsigmaITS_recalib = GetRecalibratedITSnsigma (nsigmaITS,eta,p);
 
         //Fill ITS Re-calibration Map
-        if (fIsITSrecalib)  {
+        /* if (fIsITSrecalib)  {
             if (!IsProtonCandidate(track)) continue;
             hITSnsigma -> Fill (eta,p,nsigmaITS_recalib);
             continue;
-        }
+        } */
 
         for (Int_t isyst=0 ; isyst<50 ; isyst++)  {
 
@@ -309,12 +308,9 @@ void AliAnalysisTaskJetFemto::RunData()  {
             Double_t tpc_rap[3] = {y,pt,nsigmaTPC};
             Double_t tof_rap[3] = {y,pt,nsigmaTOF};
 
-            //DCA_{xy} Selection
-            if (TMath::Abs(DCAxy)>0.1) continue;
-
             //TPC Analysis
-            if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[isyst]) hTPCnsigma -> Fill (var_tpc);
-            if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[0] && isyst==0) hTPCnsigma_vs_rap -> Fill (tpc_rap);
+            // if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[isyst]) hTPCnsigma -> Fill (var_tpc);
+            // if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[0] && isyst==0) hTPCnsigma_vs_rap -> Fill (tpc_rap);
 
             //TOF Analysis
             if (pt<0.5)       continue;
@@ -371,9 +367,6 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         AliESDtrack *track = static_cast<AliESDtrack*>(fESDEvent->GetTrack(prot_ID[i]));
         if (track->Pt()>2.0)   continue;
         if (track->Charge()>0) continue;
-
-        Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
-        if (TMath::Abs(DCAxy)>0.1) continue;
 
         //Variables
         Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (track,AliPID::kProton);
@@ -524,42 +517,17 @@ Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
     return decayLengthV0;
 }
 //______________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
+/* Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
 
     //Initialization
     Bool_t isProton=(kFALSE);
 
-    Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
-
-    if (TMath::Abs(DCAxy)>0.1)          return isProton;
     if (track->P()>1.0)                 return isProton;
 
     isProton=kTRUE;
     return isProton;
-}
+} */
 //______________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::IsPionCandidate (AliESDtrack *track)  {
-
-    //Initialization
-    Bool_t isPionCandidate = (kFALSE);
-
-    //TPC Response
-    Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (track,AliPID::kPion);
-    if (TMath::Abs(nsigmaTPC)>3.0) return isPionCandidate;
-
-    isPionCandidate=kTRUE;
-    return isPionCandidate;
-}
-//__________________________________________________________________________________________________________________________________
-Double_t AliAnalysisTaskJetFemto::GetDCAtoPrimaryVertex (AliESDtrack *track, Int_t index)  {
-
-    Double_t dca[2];
-    Double_t covMatrix[3];
-    if (!track->PropagateToDCA (fESDEvent->GetPrimaryVertex(),fESDEvent->GetMagneticField(),10000,dca,covMatrix)) return -999;
-
-    return dca[index];
-}
-//__________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetRapidity (AliESDtrack *track, Double_t mass)  {
 
     //Initialization
@@ -575,7 +543,7 @@ Double_t AliAnalysisTaskJetFemto::GetRapidity (AliESDtrack *track, Double_t mass
     return y;
 }
 //____________________________________________________________________________________________________________________________
-Double_t AliAnalysisTaskJetFemto::GetRecalibratedITSnsigma (Double_t nsigma, Double_t eta, Double_t p)  {
+/* Double_t AliAnalysisTaskJetFemto::GetRecalibratedITSnsigma (Double_t nsigma, Double_t eta, Double_t p)  {
 
     //Initialization
     Double_t nsigma_corr=nsigma;
@@ -594,7 +562,7 @@ Double_t AliAnalysisTaskJetFemto::GetRecalibratedITSnsigma (Double_t nsigma, Dou
 
     nsigma_corr = (nsigma-x0)/w;
     return nsigma_corr;
-}
+} */
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::Terminate(Option_t *)  {
 

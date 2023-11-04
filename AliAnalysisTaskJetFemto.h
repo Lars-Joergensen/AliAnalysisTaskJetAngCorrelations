@@ -56,12 +56,10 @@ public:
 
     //User Functions
     Bool_t   GetEvent ();
-    Bool_t   IsHighPurityProton          (AliESDtrack *track);
-    Bool_t   IsProtonCandidate           (AliESDtrack *track);
-    Double_t GetDCAtoPrimaryVertex       (AliESDtrack *track, Int_t index);
+    // Bool_t   IsHighPurityProton          (AliESDtrack *track);
+    // Bool_t   IsProtonCandidate           (AliESDtrack *track);
     Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
-    Double_t GetRecalibratedITSnsigma    (Double_t nsigma, Double_t eta, Double_t p);
-    Bool_t   IsPionCandidate             (AliESDtrack *track);
+    // Double_t GetRecalibratedITSnsigma    (Double_t nsigma, Double_t eta, Double_t p);
     Double_t GetDecayLengthV0            (AliESDv0 *V0);
 
     //Standard Event Selection
@@ -89,7 +87,6 @@ private:
     //n-Dimensional Histograms
     THnSparse *hTPCnsigma;//!
     THnSparse *hTOFnsigma;//!
-    // THnSparse *hDCAxy;//!
 
     //2D ITS Recalibration Map
     TH3F *hITSnsigma;//!
