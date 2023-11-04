@@ -52,7 +52,6 @@ hTPCnsigma(nullptr),
 hTOFnsigma(nullptr),
 hTPCnsigma_vs_rap(nullptr),
 hTOFnsigma_vs_rap(nullptr),
-hDCAxy(nullptr),
 hITSnsigma(nullptr),
 hAntiprotonsTPC(nullptr),
 hAntiprotonsTOF(nullptr),
@@ -80,7 +79,6 @@ hTPCnsigma(nullptr),
 hTOFnsigma(nullptr),
 hTPCnsigma_vs_rap(nullptr),
 hTOFnsigma_vs_rap(nullptr),
-hDCAxy(nullptr),
 hITSnsigma(nullptr),
 hAntiprotonsTPC(nullptr),
 hAntiprotonsTOF(nullptr),
@@ -108,7 +106,6 @@ AliAnalysisTaskJetFemto::~AliAnalysisTaskJetFemto()  {
     delete hTOFnsigma;
     delete hTPCnsigma_vs_rap;
     delete hTOFnsigma_vs_rap;
-    delete hDCAxy;
     delete hITSnsigma;
     delete hAntiprotonsTPC;
     delete hAntiprotonsTOF;
@@ -153,11 +150,6 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
     hMultDistribution -> Sumw2();
     fOutputList -> Add(hMultDistribution);
 
-    //Binning DCA_{xy}
-    Int_t    bins_dcaxy[4]  = { 50,   7,  40,  100 };
-    Double_t xmin_dcaxy[4]  = {  0, 0.0, 0.0, -1.0 };
-    Double_t xmax_dcaxy[4]  = { 50, 0.7, 2.0,  1.0 };
-
     //Binning nsigma_{TPC}
     Int_t    bins_nsigmaTPC[4]  = { 50,   7,  20,   100 };
     Double_t xmin_nsigmaTPC[4]  = {  0, 0.0, 0.0, -10.0 };
@@ -167,11 +159,6 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
     Int_t    bins_nsigmaTOF[4]  = { 50,   7,  30,   200 };
     Double_t xmin_nsigmaTOF[4]  = {  0, 0.0, 0.5, -20.0 };
     Double_t xmax_nsigmaTOF[4]  = { 50, 0.7, 2.0,  20.0 };
-
-    //DCA_{xy}
-    hDCAxy = new THnSparseF ("hDCAxy","",4, bins_dcaxy, xmin_dcaxy, xmax_dcaxy);
-    hDCAxy -> Sumw2();
-    fOutputList -> Add (hDCAxy);
 
     //nsigma_{TPC}
     hTPCnsigma = new THnSparseF ("hTPCnsigma","",4, bins_nsigmaTPC, xmin_nsigmaTPC, xmax_nsigmaTPC);
@@ -316,18 +303,11 @@ void AliAnalysisTaskJetFemto::RunData()  {
 
         for (Int_t isyst=0 ; isyst<50 ; isyst++)  {
 
-            //Track Quality Cuts
-            //if (!PassedTrackSelection (track,isyst)) continue;
-
             //Variables
-            Double_t var_dca[4] = {static_cast<double>(isyst)+0.5,TMath::Abs(y),pt,DCAxy};
             Double_t var_tpc[4] = {static_cast<double>(isyst)+0.5,TMath::Abs(y),pt,nsigmaTPC};
             Double_t var_tof[4] = {static_cast<double>(isyst)+0.5,TMath::Abs(y),pt,nsigmaTOF};
             Double_t tpc_rap[3] = {y,pt,nsigmaTPC};
             Double_t tof_rap[3] = {y,pt,nsigmaTOF};
-
-            //DCA_{xy} Distributions
-            if (IsHighPurityProton(track)) hDCAxy -> Fill (var_dca);
 
             //DCA_{xy} Selection
             if (TMath::Abs(DCAxy)>0.1) continue;
@@ -379,12 +359,8 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         if (posTrack->Charge() == negTrack->Charge()) continue;
         if (posTrack->GetID()  == negTrack->GetID() ) continue;
 
-        //Track Quality Cuts
-        //if (!PassedV0Selection(V0)) continue;
-        //if (!PassedTrackSelectionV0daugh (negTrack)) continue;
-
         //Store Candidate IDs
-        if (PassedAntiLambdaSelection(V0)) prot_ID.push_back(V0->GetNindex());
+        prot_ID.push_back(V0->GetNindex());
     }
 
     //Fill Histogram for AntiProtons
@@ -395,7 +371,7 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         AliESDtrack *track = static_cast<AliESDtrack*>(fESDEvent->GetTrack(prot_ID[i]));
         if (track->Pt()>2.0)   continue;
         if (track->Charge()>0) continue;
-        //if (!PassedTrackSelection (track,0)) continue;
+
         Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
         if (TMath::Abs(DCAxy)>0.1) continue;
 
@@ -507,7 +483,6 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
         AliESDtrack *track = (AliESDtrack*) fESDEvent->GetTrack(i);
         if (!track) continue;
 
-        //if (!PassedTrackSelection (track,0)) continue;
         mult++;
     }
 
@@ -549,117 +524,6 @@ Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
     return decayLengthV0;
 }
 //______________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::PassedAntiLambdaSelection (AliESDv0 *V0)  {
-
-    //Initialization
-    Bool_t passedLambdaSelection=(kFALSE);
-
-    //Get V0 Daughters
-    AliESDtrack *posTrack = (AliESDtrack*) fESDEvent->GetTrack(V0->GetPindex());
-    AliESDtrack *negTrack = (AliESDtrack*) fESDEvent->GetTrack(V0->GetNindex());
-
-    //Momenta of the Daughters
-    Double_t posMomentum[3] = { 0.0, 0.0, 0.0 };
-    Double_t negMomentum[3] = { 0.0, 0.0, 0.0 };
-    V0->GetPPxPyPz(posMomentum[0],posMomentum[1],posMomentum[2]);
-    V0->GetNPxPyPz(negMomentum[0],negMomentum[1],negMomentum[2]);
-    TVector3 Ppos (posMomentum[0],posMomentum[1],posMomentum[2]);
-    TVector3 Pneg (negMomentum[0],negMomentum[1],negMomentum[2]);
-
-    //Selection on Armenteros Plot
-    if ( V0->AlphaV0()<-0.9 || V0->AlphaV0()>0.9 ) return passedLambdaSelection;
-    if ( V0->AlphaV0()>-0.4 && V0->AlphaV0()<0.4 ) return passedLambdaSelection;
-    if ( V0->PtArmV0() > 0.12) return passedLambdaSelection;
-
-    //PID of V0 Daughters
-    Double_t nsigmaTPC_pion = fPIDResponse -> NumberOfSigmasTPC (posTrack,AliPID::kPion);
-    Double_t nsigmaTPC_prot = fPIDResponse -> NumberOfSigmasTPC (negTrack,AliPID::kProton);
-    if (TMath::Abs(nsigmaTPC_pion) > 2.0) return passedLambdaSelection;
-    //if (TMath::Abs(nsigmaTPC_prot) > 3.0) return passedLambdaSelection;
-
-    //Invariant-Mass Selection: Anti-Lambda^{0}
-    Double_t mass = MassLambda(Ppos,Pneg);//Pion,Proton
-    if (mass<1.11) return passedLambdaSelection;
-    if (mass>1.12) return passedLambdaSelection;
-
-
-    passedLambdaSelection=kTRUE;
-    return passedLambdaSelection;
-}
-//______________________________________________________________________________________________________________________________________
-Double_t AliAnalysisTaskJetFemto::MassLambda (TVector3 Ppion, TVector3 Pprot)  {
-
-    //Initialization
-    Double_t mass(0);
-
-    //Particle Masses
-    Double_t mPion = TDatabasePDG::Instance()->GetParticle(211)->Mass();
-    Double_t mProt = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
-
-    //4-Momentum Vectors
-    TLorentzVector P1; P1.SetXYZM(Ppion.Px(),Ppion.Py(),Ppion.Pz(),mPion);
-    TLorentzVector P2; P2.SetXYZM(Pprot.Px(),Pprot.Py(),Pprot.Pz(),mProt);
-
-    //Invariant Mass
-    mass = (P1 + P2).M();
-
-    return mass;
-}
-//__________________________________________________________________________________________________________________________________
-/* Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliESDtrack *track, Int_t isyst)  {
-
-    //Initialization
-    Bool_t passedTrkSelection=(kFALSE);
-
-    //Basic Track Selection
-    if ( !fESDtrackCuts[isyst]->AcceptTrack (track) ) return passedTrkSelection;
-
-    //Fixed Cuts
-    if (TMath::Abs(GetDCAtoPrimaryVertex(track,0))>1.0) return passedTrkSelection;
-    if (!track->HasPointOnITSLayer(0))                  return passedTrkSelection;
-    if (!track->HasPointOnITSLayer(1))                  return passedTrkSelection;
-
-    //Track Variables
-    Int_t nTPCcr      = track->GetTPCCrossedRows();
-    Int_t nTPCfind     = track->GetTPCNclsF();
-    Int_t nITScls     = track->GetITSNcls();
-    Int_t nTPCcls     = track->GetTPCNcls();
-    Int_t nTPCclsdEdx = track->GetTPCsignalN();
-    Double_t chi2ITS  = track->GetITSchi2();
-    Double_t chi2TPC  = track->GetTPCchi2();
-    Double_t DCAxy    = TMath::Abs(GetDCAtoPrimaryVertex(track,0));
-    Double_t DCAz     = TMath::Abs(GetDCAtoPrimaryVertex(track,1));
-    Double_t cr_over_findable = (Double_t)nTPCcr/((Double_t)nTPCfind);
-    Double_t chi2TPC_NDF      = chi2TPC/((Double_t)nTPCcls) ;
-
-    //Set of Cuts
-    Int_t nTPCcr_min[51] = {0,80,97,71,75,86,87,74,71,71,91,82,77,75,85,80,88,94,83,85,82,74,86,75,93,96,96,84,83,71,94,84,82,72,85,76,86,83,82,93,90,92,92,70,83,91,93,97,82,80,95};
-
-    Int_t nITScls_min[51] = {0,5,4,3,3,6,3,4,4,5,4,4,6,3,4,4,3,4,4,3,4,4,5,4,3,5,4,6,4,5,4,3,4,5,4,4,6,4,4,4,5,4,4,5,4,3,6,4,3,4,4};
-
-    Int_t nTPCclsdEdx_min[51] = {0,60,63,54,57,57,64,69,60,54,62,66,50,55,64,68,50,67,59,52,64,67,64,50,55,56,52,68,70,54,57,62,63,50,50,68,64,63,67,53,58,54,54,68,56,51,56,63,59,56,58};
-
-    Double_t chi2ITS_max[51] = {50,36,46.1797,36.6257,48.2043,36.8251,46.3546,44.4219,36.9071,36.4452,45.4235,44.8695,47.7977,47.0017,44.1026,37.5981,45.6092,49.7681,44.8784,38.9593,39.0638,48.7178,49.4983,49.3736,45.7836,41.407,44.4918,41.3072,36.7743,47.0045,43.5901,45.2098,43.167,46.9972,39.2736,38.6093,42.4406,47.2409,43.3473,45.1781,41.2574,45.8378,36.263,47.7494,48.1092,39.5733,42.8802,46.6033,47.2696,47.3724,45.3757};
-
-    Double_t chi2TPC_NDF_max[51] = {10,4.0,3.99601,2.79669,3.88701,3.73929,3.07139,4.14759,3.19747,4.58796,4.53536,3.56903,4.85172,3.70836,5.01696,5.05308,4.16061,3.40112,4.67905,4.40227,5.0066,4.95311,3.13955,3.35452,4.43888,4.21231,3.8571,3.43539,5.16655,5.19831,4.4465,4.1092,4.57635,2.61833,4.17145,4.14075,3.91889,5.05004,3.12027,3.86329,3.47401,5.27806,3.50963,4.18327,4.7357,3.71845,2.67676,3.2959,4.27114,2.86657,3.1244};
-
-    Double_t dcaz_max[51] = {5.,1.0,0.524845,0.838556,1.36511,0.972847,0.644151,1.14321,0.557206,0.978874,1.14591,0.958042,0.950637,0.718069,0.520478,1.26181,0.958435,0.532273,1.13665,1.1004,1.37577,1.02552,0.571379,0.708928,0.831586,1.44803,0.90449,1.0531,0.627843,1.42758,1.4044,0.56425,0.901189,0.987433,0.816606,1.37016,1.32486,1.30484,0.572152,1.34936,0.535521,0.819561,0.575574,1.44179,1.25525,1.36479,0.522065,0.535635,1.26045,0.851564,0.599568};
-
-    Double_t cr_over_findable_min[51] = {0.,0.8,0.849002,0.781492,0.897933,0.704228,0.706126,0.704632,0.709122,0.897615,0.727589,0.765229,0.834458,0.878155,0.824003,0.893187,0.824451,0.76873,0.796163,0.713176,0.736468,0.722194,0.79335,0.892695,0.81785,0.702785,0.81674,0.859769,0.845479,0.729515,0.848578,0.831617,0.782084,0.817316,0.873488,0.849991,0.717202,0.827419,0.885216,0.870209,0.801342,0.814752,0.867845,0.866332,0.738925,0.778826,0.793383,0.812433,0.718611,0.704671,0.889181};
-
-    //Selections
-    if (nTPCcr<nTPCcr_min[isyst])                     return passedTrkSelection;
-    if (nITScls<nITScls_min[isyst])                   return passedTrkSelection;
-    if (nTPCclsdEdx<nTPCclsdEdx_min[isyst])           return passedTrkSelection;
-    if (cr_over_findable<cr_over_findable_min[isyst])   return passedTrkSelection;
-    if (chi2TPC_NDF>chi2TPC_NDF_max[isyst])           return passedTrkSelection;
-    if (chi2ITS>chi2ITS_max[isyst])                   return passedTrkSelection;
-    if (DCAz>dcaz_max[isyst])                         return passedTrkSelection;
-
-    passedTrkSelection = kTRUE;
-    return passedTrkSelection;
-} */
-//__________________________________________________________________________________________________________________________________
 Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
 
     //Initialization
@@ -667,8 +531,6 @@ Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
 
     Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
 
-    //if (!PassedTrackSelection(track,0)) return isProton;
-    if (!IsHighPurityProton(track))     return isProton;
     if (TMath::Abs(DCAxy)>0.1)          return isProton;
     if (track->P()>1.0)                 return isProton;
 
@@ -687,22 +549,6 @@ Bool_t AliAnalysisTaskJetFemto::IsPionCandidate (AliESDtrack *track)  {
 
     isPionCandidate=kTRUE;
     return isPionCandidate;
-}
-//__________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::IsHighPurityProton (AliESDtrack *track)  {
-
-    //Variables
-    Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (track,AliPID::kProton);
-    Double_t nsigmaTOF = fPIDResponse -> NumberOfSigmasTOF (track,AliPID::kProton);
-    Double_t nsigmaITS = fPIDResponse -> NumberOfSigmasITS (track,AliPID::kProton);
-    Double_t nsigmaITS_recalib = GetRecalibratedITSnsigma (nsigmaITS,track->Eta(),track->P());
-    Double_t pt = track->Pt();
-
-    //Selection
-    if (pt<0.7 && TMath::Abs(nsigmaITS_recalib)<3.0 && TMath::Abs(nsigmaTPC)<3.0) return kTRUE;
-    if (pt>0.7 && TMath::Abs(nsigmaTPC)<2.0 && TMath::Abs(nsigmaTOF)<2.0)         return kTRUE;
-
-    return kFALSE;
 }
 //__________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetDCAtoPrimaryVertex (AliESDtrack *track, Int_t index)  {
