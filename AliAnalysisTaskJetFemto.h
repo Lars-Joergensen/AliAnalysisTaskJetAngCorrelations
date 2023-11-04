@@ -33,11 +33,11 @@ public:
     virtual ~AliAnalysisTaskJetFemto();
 
     //Running Mode
-    void SetRunningMode (Bool_t isITSrecalib, Bool_t runData, Bool_t matchingEff) {
+    void SetRunningMode (Bool_t isITSrecalib, Bool_t runData) {// Bool_t matchingEff) {
 
         fIsITSrecalib = isITSrecalib;
         fRunData      = runData;
-        fMatchingEff  = matchingEff;
+        //fMatchingEff  = matchingEff;
     }
 
     //Set ITS Recalibration maps
@@ -52,12 +52,12 @@ public:
     virtual void UserExec  (Option_t *option);
     virtual void Terminate (Option_t *);
     void  RunData();
-    void  MatchingEff();
+    // void  MatchingEff();
 
     //User Functions
     Bool_t   GetEvent ();
     Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
-    Double_t GetDecayLengthV0            (AliESDv0 *V0);
+    // Double_t GetDecayLengthV0            (AliESDv0 *V0);
 
     //Standard Event Selection
     AliEventCuts  fESDEventSelection;//
@@ -71,7 +71,7 @@ private:
     TList           *fQAList;//!
     Bool_t           fIsITSrecalib;//
     Bool_t           fRunData;//
-    Bool_t           fMatchingEff;//
+    //Bool_t           fMatchingEff;//
 
     TH2F *hMean;//
     TH2F *hWidth;//
@@ -82,19 +82,18 @@ private:
     TH1I *hMultDistribution;//!
 
     //n-Dimensional Histograms
-    THnSparse *hTPCnsigma;//!
-    THnSparse *hTOFnsigma;//!
+    // THnSparse *hTPCnsigma;//!
+    // THnSparse *hTOFnsigma;//!
 
     //2D ITS Recalibration Map
-    TH3F *hITSnsigma;//!
+    // TH3F *hITSnsigma;//!
 
     //n-Dimensional Histograms (y>0 vs. y<0)
-    THnSparse *hTPCnsigma_vs_rap;//!
-    THnSparse *hTOFnsigma_vs_rap;//!
+    // THnSparse *hTPCnsigma_vs_rap;//!
+    // THnSparse *hTOFnsigma_vs_rap;//!
 
     //Matching Efficiency
-    TH2F *hAntiprotonsTPC;//!
-    // TH2F *hAntiprotonsTOF;//!
+    // TH2F *hAntiprotonsTPC;//!
 
     //QA
     TH2F *hnSigmaProtons_vs_Pt;//!

@@ -28,7 +28,7 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merge );
 void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr);
 void EventHandler     (AliAnalysisManager *mgr);
-void LoadPhysicsSelection();
+// void LoadPhysicsSelection();
 void LoadPIDResponse();
 void LoadCentrality();
 void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode);
@@ -42,7 +42,6 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
     //Run Mode
     Bool_t isITSrecalib = (kFALSE);
     Bool_t runData      = (kFALSE);
-    Bool_t matchingEff  = (kTRUE);
 
     //ITS recalibration map
     TFile *inputfile = TFile::Open ("alien:///alice/cern.ch/user/a/alcaliva/nSigmaITS_Recalib/ITSrecalibrationMaps_data.root");
@@ -62,7 +61,7 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
     AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_AntiProtons_vs_y");
     task -> SelectCollisionCandidates (AliVEvent::kINT7);
     task -> AliAnalysisTaskJetFemto::SetITSRecalibrationMaps (hITSnsigma_Mean,hITSnsigma_Width);
-    task -> AliAnalysisTaskJetFemto::SetRunningMode(isITSrecalib,runData,matchingEff);
+    task -> AliAnalysisTaskJetFemto::SetRunningMode(isITSrecalib,runData);
     mgr -> AddTask(task);
     mgr -> ConnectInput (task,0,mgr->GetCommonInputContainer());
     mgr -> ConnectOutput(task,1,mgr->CreateContainer("Antiprotons", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
@@ -84,7 +83,7 @@ void runAnalysisJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=
 
     //Event Handler, PID & Centrality
     EventHandler(mgr);
-    LoadPhysicsSelection ();
+    // LoadPhysicsSelection ();
     LoadCentrality ();
     LoadPIDResponse();
 
@@ -139,11 +138,11 @@ void EventHandler (AliAnalysisManager *mgr)  {
     mgr->SetInputEventHandler(inputH);
 }
 //______________________________________________________________________________________________________________________________________________________
-void LoadPhysicsSelection()  {
+// void LoadPhysicsSelection()  {
 
-    Bool_t isMC = kFALSE;
-    AliPhysicsSelectionTask *PhySel = AddTaskPhysicsSelection(isMC);
-}
+//     Bool_t isMC = kFALSE;
+//     AliPhysicsSelectionTask *PhySel = AddTaskPhysicsSelection(isMC);
+// }
 //______________________________________________________________________________________________________________________________________________________
 void LoadPIDResponse ()  {
 
