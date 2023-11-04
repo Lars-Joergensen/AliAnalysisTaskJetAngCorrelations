@@ -54,7 +54,7 @@ hTPCnsigma_vs_rap(nullptr),
 hTOFnsigma_vs_rap(nullptr),
 hITSnsigma(nullptr),
 hAntiprotonsTPC(nullptr),
-hAntiprotonsTOF(nullptr),
+// hAntiprotonsTOF(nullptr),
 hnSigmaProtons_vs_Pt(nullptr)
 {}
 //__________________________________________________________________________________________________________________________________
@@ -81,7 +81,7 @@ hTPCnsigma_vs_rap(nullptr),
 hTOFnsigma_vs_rap(nullptr),
 hITSnsigma(nullptr),
 hAntiprotonsTPC(nullptr),
-hAntiprotonsTOF(nullptr),
+// hAntiprotonsTOF(nullptr),
 hnSigmaProtons_vs_Pt(nullptr)
 {
     DefineInput (0, TChain::Class());
@@ -108,7 +108,7 @@ AliAnalysisTaskJetFemto::~AliAnalysisTaskJetFemto()  {
     delete hTOFnsigma_vs_rap;
     delete hITSnsigma;
     delete hAntiprotonsTPC;
-    delete hAntiprotonsTOF;
+    // delete hAntiprotonsTOF;
     delete hnSigmaProtons_vs_Pt;
 }
 //__________________________________________________________________________________________________________________________________
@@ -233,11 +233,11 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
 
     //Matching Efficiency
     hAntiprotonsTPC = new TH2F ("hAntiprotonsTPC","",nBins_pt,pt,nBins_y,y);
-    hAntiprotonsTOF = new TH2F ("hAntiprotonsTOF","",nBins_pt,pt,nBins_y,y);
+    // hAntiprotonsTOF = new TH2F ("hAntiprotonsTOF","",nBins_pt,pt,nBins_y,y);
     hAntiprotonsTPC -> Sumw2();
-    hAntiprotonsTOF -> Sumw2();
+    // hAntiprotonsTOF -> Sumw2();
     fOutputList -> Add (hAntiprotonsTPC);
-    fOutputList -> Add (hAntiprotonsTOF);
+    // fOutputList -> Add (hAntiprotonsTOF);
 
     //QA
     hnSigmaProtons_vs_Pt = new TH2F ("hnSigmaProtons_vs_Pt","",200,0,2,200,-10,10);
@@ -290,16 +290,6 @@ void AliAnalysisTaskJetFemto::RunData()  {
         Bool_t   hasTOFhit = (track->GetStatus() & AliVTrack::kTOFout) && (track->GetStatus() & AliVTrack::kTIME);
         Double_t length    = track->GetIntegratedLength();
 
-        //ITS Recalibration
-        // Double_t nsigmaITS_recalib = GetRecalibratedITSnsigma (nsigmaITS,eta,p);
-
-        //Fill ITS Re-calibration Map
-        /* if (fIsITSrecalib)  {
-            if (!IsProtonCandidate(track)) continue;
-            hITSnsigma -> Fill (eta,p,nsigmaITS_recalib);
-            continue;
-        } */
-
         for (Int_t isyst=0 ; isyst<50 ; isyst++)  {
 
             //Variables
@@ -307,10 +297,6 @@ void AliAnalysisTaskJetFemto::RunData()  {
             Double_t var_tof[4] = {static_cast<double>(isyst)+0.5,TMath::Abs(y),pt,nsigmaTOF};
             Double_t tpc_rap[3] = {y,pt,nsigmaTPC};
             Double_t tof_rap[3] = {y,pt,nsigmaTOF};
-
-            //TPC Analysis
-            // if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[isyst]) hTPCnsigma -> Fill (var_tpc);
-            // if (pt<1.0 && TMath::Abs(nsigmaITS_recalib)<nsigmaITSmax[0] && isyst==0) hTPCnsigma_vs_rap -> Fill (tpc_rap);
 
             //TOF Analysis
             if (pt<0.5)       continue;
@@ -370,11 +356,11 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
 
         //Variables
         Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (track,AliPID::kProton);
-        Double_t nsigmaTOF = fPIDResponse -> NumberOfSigmasTOF (track,AliPID::kProton);
+        // Double_t nsigmaTOF = fPIDResponse -> NumberOfSigmasTOF (track,AliPID::kProton);
         Double_t pt        = track->Pt();
         Double_t y         = GetRapidity(track,mass);
-        Bool_t   hasTOFhit = (track->GetStatus() & AliVTrack::kTOFout) && (track->GetStatus() & AliVTrack::kTIME);
-        Double_t length    = track->GetIntegratedLength();
+        // Bool_t   hasTOFhit = (track->GetStatus() & AliVTrack::kTOFout) && (track->GetStatus() & AliVTrack::kTIME);
+        // Double_t length    = track->GetIntegratedLength();
 
         //Fill QA
         hnSigmaProtons_vs_Pt -> Fill (pt,nsigmaTPC);
@@ -384,13 +370,13 @@ void AliAnalysisTaskJetFemto::MatchingEff()  {
         hAntiprotonsTPC -> Fill (pt,TMath::Abs(y));
 
         //TOF Analysis
-        if (!hasTOFhit)     continue;
-        if (length<350.0)   continue;
-        if (nsigmaTOF<-3.0) continue;
-        if (nsigmaTOF>+3.5) continue;
+        // if (!hasTOFhit)     continue;
+        // if (length<350.0)   continue;
+        // if (nsigmaTOF<-3.0) continue;
+        // if (nsigmaTOF>+3.5) continue;
 
         //Fill TOF
-        hAntiprotonsTOF -> Fill (pt,TMath::Abs(y));
+        // hAntiprotonsTOF -> Fill (pt,TMath::Abs(y));
     }
 
 
@@ -493,8 +479,8 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
 
     return kTRUE;
 }
-//_____________________________________________________________________________________________________________________________________
-Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
+//__________________________________________________________________________________________________________________________________
+/* Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
 
     //Initialization
     Double_t decayLengthV0 = 0.0;
@@ -515,19 +501,8 @@ Double_t AliAnalysisTaskJetFemto::GetDecayLengthV0 (AliESDv0 *V0)  {
     decayLengthV0 = TMath::Sqrt(Dx*Dx + Dy*Dy + Dz*Dz);
 
     return decayLengthV0;
-}
-//______________________________________________________________________________________________________________________________________
-/* Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliESDtrack *track)  {
-
-    //Initialization
-    Bool_t isProton=(kFALSE);
-
-    if (track->P()>1.0)                 return isProton;
-
-    isProton=kTRUE;
-    return isProton;
 } */
-//______________________________________________________________________________________________________________________________________
+//__________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetRapidity (AliESDtrack *track, Double_t mass)  {
 
     //Initialization
@@ -542,27 +517,6 @@ Double_t AliAnalysisTaskJetFemto::GetRapidity (AliESDtrack *track, Double_t mass
 
     return y;
 }
-//____________________________________________________________________________________________________________________________
-/* Double_t AliAnalysisTaskJetFemto::GetRecalibratedITSnsigma (Double_t nsigma, Double_t eta, Double_t p)  {
-
-    //Initialization
-    Double_t nsigma_corr=nsigma;
-
-    //Protections
-    if (eta<-1.0) return nsigma_corr;
-    if (eta>+1.0) return nsigma_corr;
-    if (p>1.0)    return nsigma_corr;
-    if (p<0.3)    return nsigma_corr;
-
-    //Get Mean and Width from Maps
-    Int_t ix = hMean -> GetXaxis()->FindBin(eta);
-    Int_t iy = hMean -> GetYaxis()->FindBin(p);
-    Double_t x0 = hMean ->GetBinContent (ix,iy);
-    Double_t w  = hWidth->GetBinContent (ix,iy);
-
-    nsigma_corr = (nsigma-x0)/w;
-    return nsigma_corr;
-} */
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::Terminate(Option_t *)  {
 

@@ -56,10 +56,7 @@ public:
 
     //User Functions
     Bool_t   GetEvent ();
-    // Bool_t   IsHighPurityProton          (AliESDtrack *track);
-    // Bool_t   IsProtonCandidate           (AliESDtrack *track);
     Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
-    // Double_t GetRecalibratedITSnsigma    (Double_t nsigma, Double_t eta, Double_t p);
     Double_t GetDecayLengthV0            (AliESDv0 *V0);
 
     //Standard Event Selection
@@ -97,7 +94,7 @@ private:
 
     //Matching Efficiency
     TH2F *hAntiprotonsTPC;//!
-    TH2F *hAntiprotonsTOF;//!
+    // TH2F *hAntiprotonsTOF;//!
 
     //QA
     TH2F *hnSigmaProtons_vs_Pt;//!
