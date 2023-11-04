@@ -1,12 +1,12 @@
 #ifndef AliAnalysisTaskJetFemto_cxx
 #define AliAnalysisTaskJetFemto_cxx
 
-//======================== Antiprotons vs. Rapidity ========================//
-//                                                                          //
-//    Antiproton production vs. transverse momentum and rapidity            //
-//    for the calculation of the coalescence parameters B_{2} and B_{3}.    //
-//                                                                          //
-//==========================================================================//
+//======================== Jet Femtoscopy ========================//
+//                                                                //
+//    Reconstructing jets and performing a femtoscopic analysis   //
+//             on them to find the source size in jets             //
+//                                                                //
+//================================================================//
 
 #include "AliAnalysisTaskSE.h"
 #include "AliMultSelection.h"
@@ -33,18 +33,8 @@ public:
     virtual ~AliAnalysisTaskJetFemto();
 
     //Running Mode
-    void SetRunningMode (Bool_t isITSrecalib, Bool_t runData) {// Bool_t matchingEff) {
-
-        fIsITSrecalib = isITSrecalib;
+    void SetRunningMode (Bool_t runData) {
         fRunData      = runData;
-        //fMatchingEff  = matchingEff;
-    }
-
-    //Set ITS Recalibration maps
-    void SetITSRecalibrationMaps (TH2F *hITSnsigma_Mean, TH2F *hITSnsigma_Width)  {
-
-        hMean  = hITSnsigma_Mean;
-        hWidth = hITSnsigma_Width;
     }
 
     //General Functions
@@ -52,51 +42,18 @@ public:
     virtual void UserExec  (Option_t *option);
     virtual void Terminate (Option_t *);
     void  RunData();
-    // void  MatchingEff();
 
     //User Functions
     Bool_t   GetEvent ();
-    Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
-    // Double_t GetDecayLengthV0            (AliESDv0 *V0);
-
-    //Standard Event Selection
-    AliEventCuts  fESDEventSelection;//
+    // Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
 
 private:
     AliESDEvent     *fESDEvent;//!
     AliPIDResponse  *fPIDResponse;//!
-    AliESDtrackCuts *fESDtrackCuts[50];//!
-    AliESDtrackCuts *fESDtrackCuts_V0daugh;//!
     TList           *fOutputList;//!
     TList           *fQAList;//!
-    Bool_t           fIsITSrecalib;//
     Bool_t           fRunData;//
-    //Bool_t           fMatchingEff;//
-
-    TH2F *hMean;//
-    TH2F *hWidth;//
-
-    //Event Counter and Centrality Distribution
     TH1F *hNumberOfEvents;//!
-    TH1F *hMultiplicity;//!
-    TH1I *hMultDistribution;//!
-
-    //n-Dimensional Histograms
-    // THnSparse *hTPCnsigma;//!
-    // THnSparse *hTOFnsigma;//!
-
-    //2D ITS Recalibration Map
-    // TH3F *hITSnsigma;//!
-
-    //n-Dimensional Histograms (y>0 vs. y<0)
-    // THnSparse *hTPCnsigma_vs_rap;//!
-    // THnSparse *hTOFnsigma_vs_rap;//!
-
-    //Matching Efficiency
-    // TH2F *hAntiprotonsTPC;//!
-
-    //QA
-    TH2F *hnSigmaProtons_vs_Pt;//!
 
     AliAnalysisTaskJetFemto(const AliAnalysisTaskJetFemto&);
     AliAnalysisTaskJetFemto& operator=(const AliAnalysisTaskJetFemto&);
