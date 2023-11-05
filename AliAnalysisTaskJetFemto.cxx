@@ -10,13 +10,13 @@
 #include "TLorentzVector.h"
 #include "AliEventCuts.h"
 #include "TDatabasePDG.h"
-#include "AliESDVertex.h"
-#include "AliESDtrack.h"
-#include "AliESDEvent.h"
+#include "AliAODVertex.h"
+#include "AliAODTrack.h"
+#include "AliAODEvent.h"
 #include "THnSparse.h"
 #include "AliVVZERO.h"
 #include "TObjArray.h"
-#include "AliESDv0.h"
+#include "AliAODv0.h"
 #include "TChain.h"
 #include "TMath.h"
 #include "TH1F.h"
@@ -33,7 +33,7 @@ ClassImp(AliAnalysisTaskJetFemto)
 //__________________________________________________________________________________________________________________________________
 AliAnalysisTaskJetFemto::AliAnalysisTaskJetFemto():
 AliAnalysisTaskSE(),
-fESDEvent(nullptr),
+fAODEvent(nullptr),
 fPIDResponse(nullptr),
 fOutputList(nullptr),
 fQAList(nullptr),
@@ -43,7 +43,7 @@ hNumberOfEvents(nullptr)
 //__________________________________________________________________________________________________________________________________
 AliAnalysisTaskJetFemto::AliAnalysisTaskJetFemto(const char *name):
 AliAnalysisTaskSE(name),
-fESDEvent(nullptr),
+fAODEvent(nullptr),
 fPIDResponse(nullptr),
 fOutputList(nullptr),
 fQAList(nullptr),
@@ -58,7 +58,7 @@ hNumberOfEvents(nullptr)
 AliAnalysisTaskJetFemto::~AliAnalysisTaskJetFemto()  {
 
     fOutputList->Clear();
-    delete fESDEvent;
+    delete fAODEvent;
     delete fPIDResponse;
     delete fOutputList;
     delete fQAList;
@@ -92,8 +92,15 @@ void AliAnalysisTaskJetFemto::UserExec(Option_t *)  {
 }
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::RunData()  {
+    //Do I want track selection before putting in the jet finder?
+
+
+
+
+
+
     //Check
-    if (fESDEvent->GetNumberOfTracks()==0) hNumberOfEvents->Fill(18.5);
+    if (fAODEvent->GetNumberOfTracks()==0) hNumberOfEvents->Fill(18.5);
 
     //Post Output Data
     PostData(1, fOutputList);
@@ -102,8 +109,8 @@ void AliAnalysisTaskJetFemto::RunData()  {
 Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
 
     //Get Input Event
-    fESDEvent = dynamic_cast <AliESDEvent*>(InputEvent());
-    if (!fESDEvent) return kFALSE;
+    fAODEvent = dynamic_cast <AliAODEvent*>(InputEvent());
+    if (!fAODEvent) return kFALSE;
     hNumberOfEvents -> Fill(0.5);
 
     //Load PID Response

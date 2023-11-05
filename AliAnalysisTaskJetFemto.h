@@ -11,13 +11,13 @@
 #include "AliAnalysisTaskSE.h"
 #include "AliMultSelection.h"
 #include "AliAnalysisUtils.h"
-#include "AliESDtrackCuts.h"
+// #include "AliAODtrackCuts.h"
 #include "AliAnalysisTask.h"
 #include "AliPIDResponse.h"
-#include "AliESDVertex.h"
+#include "AliAODVertex.h"
 #include "AliEventCuts.h"
-#include "AliESDEvent.h"
-#include "AliESDtrack.h"
+#include "AliAODEvent.h"
+#include "AliAODTrack.h"
 #include "THnSparse.h"
 #include "TList.h"
 #include "TH1F.h"
@@ -45,10 +45,9 @@ public:
 
     //User Functions
     Bool_t   GetEvent ();
-    // Double_t GetRapidity                 (AliESDtrack *track, Double_t mass);
 
 private:
-    AliESDEvent     *fESDEvent;//!
+    AliAODEvent     *fAODEvent;//!
     AliPIDResponse  *fPIDResponse;//!
     TList           *fOutputList;//!
     TList           *fQAList;//!

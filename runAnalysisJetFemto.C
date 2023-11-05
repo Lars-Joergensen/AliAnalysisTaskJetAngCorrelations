@@ -1,7 +1,7 @@
-#ifdef __CLING__
+// #ifdef __CLING__
 
 R__ADD_INCLUDE_PATH($ALICE_ROOT)
-#include <ANALYSIS/macros/train/AddESDHandler.C>
+#include <ANALYSIS/macros/train/AddAODHandler.C>
 #include <ANALYSIS/macros/AddTaskPIDResponse.C>
 
 R__ADD_INCLUDE_PATH($ALICE_PHYSICS)
@@ -10,9 +10,9 @@ R__ADD_INCLUDE_PATH($ALICE_PHYSICS)
 R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #include "AliAnalysisAlien.h"
 #include "AliAnalysisManager.h"
-#include "AliESDInputHandler.h"
+#include "AliAODInputHandler.h"
 #include "AliAnalysisTaskJetFemto.h"
-#endif
+// #endif
 //================================================================================================================
 
 //Definitions
@@ -51,7 +51,7 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
     TString fileName = AliAnalysisManager::GetCommonFileName();
 
     //Analysis Task
-    AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_AntiProtons_vs_y");
+    AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_JetReconstruction_Femtoscopy");
     task -> SelectCollisionCandidates (AliVEvent::kINT7);
     task -> AliAnalysisTaskJetFemto::SetRunningMode(runData);
     mgr -> AddTask(task);
@@ -99,10 +99,13 @@ AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merg
     alien->SetAliPhysicsVersion(ALIPHYSICS_VER);
     alien->AddIncludePath("$ALICE_PHYSICS/include");
     alien->AddIncludePath("$ALICE_ROOT/include");
-    alien->SetGridDataDir("/alice/data/2018/LHC18m");
-    alien->SetDataPattern("/pass2/*/AliESDs.root");
+    // alien->SetGridDataDir("/alice/data/2018/LHC18m");
+    alien->SetGridDataDir("/alice/data/2011/LHC11h_2");
+    // alien->SetDataPattern("/pass2/*/AliESDs.root");
     alien->SetRunPrefix("000");
-    SetInputRuns (iChunk,alien,mode);
+    alien->SetDataPattern("*ESDs/pass2/AOD145/*AOD.root");
+    // SetInputRuns (iChunk,alien,mode);
+    alien->AddRunNumber(167813);
     alien->SetNrunsPerMaster(nRunsPerMaster);
     alien->SetGridWorkingDir(Form("%s_%d",GRIDWorkingDir,iChunk));
     alien->SetGridOutputDir("OUTPUT");
@@ -125,7 +128,7 @@ AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merg
 //______________________________________________________________________________________________________________________________________________________
 void EventHandler (AliAnalysisManager *mgr)  {
 
-    AliESDInputHandler *inputH = new AliESDInputHandler();
+    AliAODInputHandler *inputH = new AliAODInputHandler();
     mgr->SetInputEventHandler(inputH);
 }
 //______________________________________________________________________________________________________________________________________________________
@@ -141,7 +144,7 @@ void LoadPIDResponse ()  {
     AliMultSelectionTask *MultSelTask = AddTaskMultSelection(lCalibration);
 } */
 //______________________________________________________________________________________________________________________________________________________
-void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  {
+/* void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  {
 
     //Run List: RunList_LHC18m_pass2_CentralBarrelTracking_electronPID.txt
     Int_t run0[] = { 292839, 292836, 292834, 292832, 292831, 292811, 292810, 292809, 292804, 292803, 292752, 292750, 292748, 292747, 292744, 292739, 292737, 292704, 292701, 292698, 292696, 292695, 292693, 292586, 292584, 292563, 292560, 292559, 292557, 292554, 292553, 292526, 292524, 292523, 292521, 292500, 292497, 292496, 292495, 292457, 292456, 292434, 292432, 292430, 292429, 292428, 292406, 292405, 292398, 292397, 292298, 292273, 292265, 292242, 292241, 292240, 292192, 292168, 292167, 292166, 292164, 292163, 292162, 292161, 292160, 292140, 292115, 292114
@@ -166,5 +169,5 @@ void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  {
         if (iChunk==1) alien->AddRunNumber(run1[iRun]);
         if (iChunk==2) alien->AddRunNumber(run2[iRun]);
     }
-}
+} */
 //______________________________________________________________________________________________________________________________________________________
