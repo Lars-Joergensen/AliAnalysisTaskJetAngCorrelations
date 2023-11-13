@@ -1,4 +1,4 @@
-// #ifdef __CLING__
+#ifdef __CLING__
 
 R__ADD_INCLUDE_PATH($ALICE_ROOT)
 #include <ANALYSIS/macros/train/AddAODHandler.C>
@@ -12,8 +12,8 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #include "AliAnalysisManager.h"
 #include "AliAODInputHandler.h"
 #include "AliAnalysisTaskJetFemto.h"
-// #endif
-//================================================================================================================
+#endif
+//===========================================================================================================================================
 
 //Definitions
 #define ALIPHYSICS_VER  "vAN-20220531_ROOT6-1"
@@ -28,13 +28,12 @@ AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merg
 void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr);
 void EventHandler     (AliAnalysisManager *mgr);
 void LoadPIDResponse();
-// void LoadCentrality();
 void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode);
 
 //Test
 Bool_t test = (kFALSE);
 
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
 
     //Run Mode
@@ -56,26 +55,25 @@ void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
     task -> AliAnalysisTaskJetFemto::SetRunningMode(runData);
     mgr -> AddTask(task);
     mgr -> ConnectInput (task,0,mgr->GetCommonInputContainer());
-    mgr -> ConnectOutput(task,1,mgr->CreateContainer("Antiprotons", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
+    mgr -> ConnectOutput(task,1,mgr->CreateContainer("Jets", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
     mgr -> ConnectOutput(task,2,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
 }
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 void runAnalysisJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=kTRUE)  {
 
     //Grid Connection
     TGrid::Connect("alien://");
 
     //Alien Handler
-    AliAnalysisGrid *alienHandler = CreateAlienHandler (iChunk,mode,merge);
-    if (!alienHandler) return;
+    AliAnalysisGrid *alienGridHandler = CreateAlienHandler (iChunk,mode,merge);
+    if (!alienGridHandler) return;
 
     //Analysis Manager
     AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisManager");
-    mgr->SetGridHandler(alienHandler);
+    mgr->SetGridHandler(alienGridHandler);
 
     //Event Handler, PID & Centrality
     EventHandler(mgr);
-    // LoadCentrality ();
     LoadPIDResponse();
 
     //Analysis Task
@@ -86,7 +84,7 @@ void runAnalysisJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=
     mgr->PrintStatus();
     mgr->StartAnalysis("grid");
 };
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merge )  {
 
     //Alien Handler
@@ -99,12 +97,9 @@ AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merg
     alien->SetAliPhysicsVersion(ALIPHYSICS_VER);
     alien->AddIncludePath("$ALICE_PHYSICS/include");
     alien->AddIncludePath("$ALICE_ROOT/include");
-    // alien->SetGridDataDir("/alice/data/2018/LHC18m");
     alien->SetGridDataDir("/alice/data/2011/LHC11h_2");
-    // alien->SetDataPattern("/pass2/*/AliESDs.root");
     alien->SetRunPrefix("000");
     alien->SetDataPattern("*ESDs/pass2/AOD145/*AOD.root");
-    // SetInputRuns (iChunk,alien,mode);
     alien->AddRunNumber(167813);
     alien->SetNrunsPerMaster(nRunsPerMaster);
     alien->SetGridWorkingDir(Form("%s_%d",GRIDWorkingDir,iChunk));
@@ -125,49 +120,16 @@ AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merg
     alien->SetSplitMode("se");
     return alien;
 }
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 void EventHandler (AliAnalysisManager *mgr)  {
 
-    AliAODInputHandler *inputH = new AliAODInputHandler();
-    mgr->SetInputEventHandler(inputH);
+    AliAODInputHandler *inputEventHandler = new AliAODInputHandler();
+    mgr->SetInputEventHandler(inputEventHandler);
 }
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 void LoadPIDResponse ()  {
 
     Bool_t isMC = kFALSE;
     AliAnalysisTaskPIDResponse *pidTask = AddTaskPIDResponse(isMC);
 }
-//______________________________________________________________________________________________________________________________________________________
-/* void LoadCentrality()  {
-
-    Bool_t lCalibration = kFALSE;
-    AliMultSelectionTask *MultSelTask = AddTaskMultSelection(lCalibration);
-} */
-//______________________________________________________________________________________________________________________________________________________
-/* void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode)  {
-
-    //Run List: RunList_LHC18m_pass2_CentralBarrelTracking_electronPID.txt
-    Int_t run0[] = { 292839, 292836, 292834, 292832, 292831, 292811, 292810, 292809, 292804, 292803, 292752, 292750, 292748, 292747, 292744, 292739, 292737, 292704, 292701, 292698, 292696, 292695, 292693, 292586, 292584, 292563, 292560, 292559, 292557, 292554, 292553, 292526, 292524, 292523, 292521, 292500, 292497, 292496, 292495, 292457, 292456, 292434, 292432, 292430, 292429, 292428, 292406, 292405, 292398, 292397, 292298, 292273, 292265, 292242, 292241, 292240, 292192, 292168, 292167, 292166, 292164, 292163, 292162, 292161, 292160, 292140, 292115, 292114
-    };
-
-    Int_t run1[] = { 292109 };
-
-    Int_t run2[] = { 291116 };
-
-    //Number of Runs
-    Int_t nRuns(0);
-    if (iChunk==0) nRuns = sizeof(run0)/sizeof(Int_t);
-    if (iChunk==1) nRuns = sizeof(run1)/sizeof(Int_t);
-    if (iChunk==2) nRuns = sizeof(run2)/sizeof(Int_t);
-
-    //Loop Over Runs
-    nRuns=1;
-    //if (test) nRuns=1;
-    for ( Int_t iRun=0 ; iRun<nRuns ; iRun++ )  {
-
-        if (iChunk==0) alien->AddRunNumber(run0[iRun]);
-        if (iChunk==1) alien->AddRunNumber(run1[iRun]);
-        if (iChunk==2) alien->AddRunNumber(run2[iRun]);
-    }
-} */
-//______________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________

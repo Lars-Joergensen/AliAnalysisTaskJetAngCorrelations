@@ -23,8 +23,9 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3F.h"
+#include <vector>
 
-//____________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 class AliAnalysisTaskJetFemto : public AliAnalysisTaskSE {
 
 public:
@@ -44,15 +45,29 @@ public:
     void  RunData();
 
     //User Functions
-    Bool_t   GetEvent ();
+    Bool_t  GetEvent            ();
+    Bool_t  IsHighPurityProton  (AliAODTrack *track);
+    Bool_t  IsProtonCandidate   (AliAODTrack *track);
+    Double_t GetRapidity        (AliAODTrack *track, Double_t mass);
+    Double_t Minimum            (Double_t x1, Double_t x2);
 
 private:
-    AliAODEvent     *fAODEvent;//!
-    AliPIDResponse  *fPIDResponse;//!
-    TList           *fOutputList;//!
-    TList           *fQAList;//!
-    Bool_t           fRunData;//
-    TH1F *hNumberOfEvents;//!
+    AliAODEvent     *fAODEvent;     //!
+    AliPIDResponse  *fPIDResponse;  //!
+    TList           *fOutputList;   //!
+    TList           *fQAList;       //!
+    Bool_t           fRunData;      //
+
+    TH1F *hNumberOfEvents;          //!
+    TH1D *hFullPt;                  //!
+    TH1I *hProtonYield;             //!
+    TH1F *hTPCnsigma;               //!
+    TH1F *hTOFnsigma;               //!
+    TH1F *hDCAxy;                   //!
+    // ^ actually THnSparse (THnSparseF in cxx)
+
+    // vector<AliAODTrack*> leadingParticles; //!
+    Double_t fJetRadius;
 
     AliAnalysisTaskJetFemto(const AliAnalysisTaskJetFemto&);
     AliAnalysisTaskJetFemto& operator=(const AliAnalysisTaskJetFemto&);
@@ -60,6 +75,6 @@ private:
     ClassDef(AliAnalysisTaskJetFemto, 1);
 
 };
-//____________________________________________________________________________________________________________________________________________________
+//___________________________________________________________________________________________________________________________________________
 
 #endif
