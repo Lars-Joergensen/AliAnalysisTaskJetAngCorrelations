@@ -45,11 +45,12 @@ public:
     void  RunData();
 
     //User Functions
-    Bool_t  GetEvent            ();
-    Bool_t  IsHighPurityProton  (AliAODTrack *track);
-    Bool_t  IsProtonCandidate   (AliAODTrack *track);
-    Double_t GetRapidity        (AliAODTrack *track, Double_t mass);
-    Double_t Minimum            (Double_t x1, Double_t x2);
+    Bool_t  GetEvent                ();
+    Bool_t  IsHighPurityProton      (AliAODTrack *track);
+    Bool_t  IsProtonCandidate       (AliAODTrack *track);
+    Double_t GetRapidity            (AliAODTrack *track, Double_t mass);
+    Double_t Minimum                (Double_t x1, Double_t x2);
+    Double_t GetDCAtoPrimaryVertex  (AliAODTrack *track, Int_t index);
 
 private:
     AliAODEvent     *fAODEvent;     //!
@@ -59,8 +60,12 @@ private:
     Bool_t           fRunData;      //
 
     TH1F *hNumberOfEvents;          //!
+    TH1F *hNumberOfTracks;          //!
+    TH1I *hParticleIDs;             //!
+    TH1I *hLeadingIDs;              //!
     TH1D *hFullPt;                  //!
-    TH1I *hProtonYield;             //!
+    TH1D *hJetPt;                   //!
+    TH1F *hProtonYield;             //!
     TH1F *hTPCnsigma;               //!
     TH1F *hTOFnsigma;               //!
     TH1F *hDCAxy;                   //!
