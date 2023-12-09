@@ -18,6 +18,7 @@
 #include "AliEventCuts.h"
 #include "AliAODEvent.h"
 #include "AliAODTrack.h"
+#include "TObjString.h"
 #include "THnSparse.h"
 #include "TList.h"
 #include "TH1F.h"
@@ -61,8 +62,8 @@ private:
 
     TH1F *hNumberOfEvents;          //!
     TH1F *hNumberOfTracks;          //!
-    TH1I *hParticleIDs;             //!
-    TH1I *hLeadingIDs;              //!
+    TH2F *hParticleIDs;             //!
+    TH2F *hLeadingIDs;              //!
     TH1D *hFullPt;                  //!
     TH1D *hJetPt;                   //!
     TH1F *hProtonYield;             //!
@@ -73,6 +74,8 @@ private:
 
     // vector<AliAODTrack*> leadingParticles; //!
     Double_t fJetRadius;
+    Double_t fMaximumPt;
+    // TObjString *fLeadingIDs;
 
     AliAnalysisTaskJetFemto(const AliAnalysisTaskJetFemto&);
     AliAnalysisTaskJetFemto& operator=(const AliAnalysisTaskJetFemto&);
