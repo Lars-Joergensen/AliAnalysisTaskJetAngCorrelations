@@ -144,11 +144,11 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
     fOutputList     -> Add(hJetPt);
 
     // add binning arrays maybe idk what to do here either
-    hTPCnsigma      = new TH1F ("hTPCnsigma", "hTPCnsigma", 50,0,50);
+    hTPCnsigma      = new TH2F ("hTPCnsigma", "hTPCnsigma", 100,0,10,500,0,50);
     hTPCnsigma      -> Sumw2();
     fOutputList     -> Add(hTPCnsigma);
 
-    hTOFnsigma      = new TH1F ("hTOFnsigma", "hTOFnsigma", 50,0,50);
+    hTOFnsigma      = new TH2F ("hTOFnsigma", "hTOFnsigma", 100,0,10,500,0,50);
     hTOFnsigma      -> Sumw2();
     fOutputList     -> Add(hTOFnsigma);
 
@@ -185,26 +185,24 @@ void AliAnalysisTaskJetFemto::RunData()  {
 
     for (Int_t i=0; i<fAODEvent->GetNumberOfTracks(); i++) {
         AliAODTrack *track = static_cast<AliAODTrack*>(fAODEvent->GetTrack(i));
-        if(!track) {
-            continue;
-            hNumberOfTracks->Fill(18.5);
-        }
+        // if(!track) {
+        //     hNumberOfTracks->Fill(18.5);
+        //     continue;
+        // }
         hNumberOfTracks -> Fill(0.5);
 
         hFullPt         -> Fill(track->Pt());
         // if(!track->Charge()<=0) continue;
         hNumberOfTracks -> Fill(1.5);
 
-        // Double_t nSigmaTPC_prot = fPIDResponse -> NumberOfSigmasTPC(track, AliPID::kProton);
-        // Double_t nSigmaTOF_prot = fPIDResponse -> NumberOfSigmasTOF(track, AliPID::kProton);
-        // Double_t nSigmaITS_prot = fPIDResponse -> NumberOfSigmasITS(track, AliPID::kProton);
-        // // Double_t nSigmaTPC_pion = fPIDResponse -> NumberOfSigmasTPC(track, AliPID::kPion);
-        // // Double_t nSigmaTOF_pion = fPIDResponse -> NumberOfSigmasTOF(track, AliPID::kPion);
-        // // Double_t nSigmaITS_pion = fPIDResponse -> NumberOfSigmasITS(track, AliPID::kPion);
+        Double_t nSigmaTPC_prot = fPIDResponse -> NumberOfSigmasTPC(track, AliPID::kProton);
+        Double_t nSigmaTOF_prot = fPIDResponse -> NumberOfSigmasTOF(track, AliPID::kProton);
+        Double_t nSigmaITS_prot = fPIDResponse -> NumberOfSigmasITS(track, AliPID::kProton);
 
-        // hTPCnsigma -> Fill(nSigmaTPC_prot);
-        // hTOFnsigma -> Fill(nSigmaTOF_prot);
-        if(TMath::Abs(track->Eta())>0.8) continue;
+        hTPCnsigma -> Fill(track->Pt(),nSigmaTPC_prot);
+        hTOFnsigma -> Fill(track->Pt(),nSigmaTOF_prot);
+
+        if(TMath::Abs(track->Eta())>0.8) continue; // everything with eta > |0.8| is unreliable, right?
         hNumberOfTracks -> Fill(2.5);
 
         if(track->Pt()>pTmax) {
@@ -286,7 +284,7 @@ void AliAnalysisTaskJetFemto::RunData()  {
             }
 
             //Find Minimum Distance Bkg
-            if (distance_bkg<distance_bkg_min)  { // is current particle's dist to bkg smaller than min dist
+            if (distance_bkg<distance_bkg_min)  { // is current particle's dist to bkg smaller than min dist?
                 distance_bkg_min=distance_bkg;// update min distance between jet and background particles -> gets smaller
                 hNumberOfTracks->Fill(8.5);
             }
@@ -346,6 +344,11 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
     fPIDResponse = inputHandler->GetPIDResponse();
 
     return kTRUE;
+}
+//__________________________________________________________________________________________________________________________________
+Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection(AliAODTrack *track) {
+    Bool_t kPassedTrackSelection = kFALSE;
+
 }
 //__________________________________________________________________________________________________________________________________
 Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliAODTrack *track)  {

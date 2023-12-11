@@ -46,9 +46,10 @@ public:
     void  RunData();
 
     //User Functions
-    Bool_t  GetEvent                ();
-    Bool_t  IsHighPurityProton      (AliAODTrack *track);
-    Bool_t  IsProtonCandidate       (AliAODTrack *track);
+    Bool_t   GetEvent                ();
+    Bool_t   PassedTrackSelection     (AliAODTrack *track);
+    Bool_t   IsHighPurityProton      (AliAODTrack *track);
+    Bool_t   IsProtonCandidate       (AliAODTrack *track);
     Double_t GetRapidity            (AliAODTrack *track, Double_t mass);
     Double_t Minimum                (Double_t x1, Double_t x2);
     Double_t GetDCAtoPrimaryVertex  (AliAODTrack *track, Int_t index);
@@ -67,8 +68,8 @@ private:
     TH1D *hFullPt;                  //!
     TH1D *hJetPt;                   //!
     TH1F *hProtonYield;             //!
-    TH1F *hTPCnsigma;               //!
-    TH1F *hTOFnsigma;               //!
+    TH2F *hTPCnsigma;               //!
+    TH2F *hTOFnsigma;               //!
     TH1F *hDCAxy;                   //!
     // ^ actually THnSparse (THnSparseF in cxx)
 
