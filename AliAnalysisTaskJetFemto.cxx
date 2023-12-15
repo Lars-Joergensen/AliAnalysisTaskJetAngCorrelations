@@ -7,6 +7,8 @@
 #include "AliAnalysisUtils.h"
 #include "AliAnalysisTask.h"
 #include "AliPIDResponse.h"
+#include "AliAODTrackSelection.h"
+#include "AliESDtrackCuts.h"
 #include "TLorentzVector.h"
 #include "AliEventCuts.h"
 #include "TDatabasePDG.h"
@@ -42,20 +44,21 @@ AliAnalysisTaskJetFemto::AliAnalysisTaskJetFemto():
 AliAnalysisTaskSE(),
 fAODEvent(nullptr),
 fPIDResponse(nullptr),
+fAODTrackCuts(nullptr),
+fESDTrackCuts(nullptr),
 fOutputList(nullptr),
 fQAList(nullptr),
 fRunData(kFALSE),
 hNumberOfEvents(nullptr),
 hNumberOfTracks(nullptr),
-hParticleIDs(nullptr),
 hLeadingIDs(nullptr),
-hProtonYield(nullptr),
 hTPCnsigma(nullptr),
 hTOFnsigma(nullptr),
 hDCAxy(nullptr),
+// hITSnsigma(nullptr),
 hFullPt(nullptr),
 hJetPt(nullptr),
-// fLeadingIDs(nullptr),
+hJetProtonPt(nullptr),
 fMaximumPt(1.0),
 fJetRadius(0.3)
 {}
@@ -64,20 +67,21 @@ AliAnalysisTaskJetFemto::AliAnalysisTaskJetFemto(const char *name):
 AliAnalysisTaskSE(name),
 fAODEvent(nullptr),
 fPIDResponse(nullptr),
+fAODTrackCuts(nullptr),
+fESDTrackCuts(nullptr),
 fOutputList(nullptr),
 fQAList(nullptr),
 fRunData(kFALSE),
 hNumberOfEvents(nullptr),
 hNumberOfTracks(nullptr),
-hParticleIDs(nullptr),
 hLeadingIDs(nullptr),
-hProtonYield(nullptr),
 hTPCnsigma(nullptr),
 hTOFnsigma(nullptr),
 hDCAxy(nullptr),
+// hITSnsigma(nullptr),
 hFullPt(nullptr),
 hJetPt(nullptr),
-// fLeadingIDs(nullptr),
+hJetProtonPt(nullptr),
 fMaximumPt(1.0),
 fJetRadius(0.3)
 {
@@ -91,19 +95,20 @@ AliAnalysisTaskJetFemto::~AliAnalysisTaskJetFemto()  {
     fOutputList->Clear();
     delete fAODEvent;
     delete fPIDResponse;
+    delete fAODTrackCuts;
+    delete fESDTrackCuts;
     delete fOutputList;
     delete fQAList;
     delete hNumberOfEvents;
     delete hNumberOfTracks;
-    delete hParticleIDs;
     delete hLeadingIDs;
-    delete hProtonYield;
     delete hTPCnsigma;
     delete hTOFnsigma;
     delete hDCAxy;
+    // delete hITSnsigma;
     delete hFullPt;
-    // delete fLeadingIDs;
     delete hJetPt;
+    delete hJetProtonPt;
 }
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
@@ -114,41 +119,36 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
     fOutputList -> SetOwner();
     fQAList     -> SetOwner();
 
-    //Event Counter and Centrality Distribution
-    hNumberOfEvents = new TH1F ("hNumberOfEvents","hNumberOfEvents",20,0,20);
+    //Event Counter
+    hNumberOfEvents = new TH1F ("hNumberOfEvents","hNumberOfEvents", 20,0,20);
     hNumberOfEvents -> Sumw2();
     fOutputList     -> Add(hNumberOfEvents);
-
-    hNumberOfTracks = new TH1F ("hNumberOfTracks","hNumberOfTracks",20,0,20);
+    //Track Counter
+    hNumberOfTracks = new TH1F ("hNumberOfTracks","hNumberOfTracks", 20,0,20);
     hNumberOfTracks -> Sumw2();
     fOutputList     -> Add(hNumberOfTracks);
 
-    hParticleIDs    = new TH2F ("hParticleIDs","hParticleIDs",66001,-33000,33000, 100,0,10);
-    hParticleIDs    -> Sumw2();
-    fOutputList     -> Add(hParticleIDs);
-
-    hLeadingIDs     = new TH2F ("hLeadingIDs","hLeadingIDs",66001,-33000,33000, 100,0,10);
+    hLeadingIDs     = new TH2F ("hLeadingIDs","hLeadingIDs", 66001,-33000,33000, 100,0,10);
     hLeadingIDs     -> Sumw2();
     fOutputList     -> Add(hLeadingIDs);
 
-    hProtonYield    = new TH1F ("hProtonYield", "hProtonYield", 200,-1,1);
-    hProtonYield    -> Sumw2();
-    fOutputList     -> Add(hProtonYield);
-
-    hFullPt         = new TH1D ("hFullPt", "hFullPt", 100, 0, 10);
+    hFullPt         = new TH1D ("hFullPt", "hFullPt", 100,0,10);
     hFullPt         -> Sumw2();
     fOutputList     -> Add(hFullPt);
 
-    hJetPt          = new TH1D ("hJetPt", "hJetPt", 100, 0, 10);
+    hJetPt          = new TH1D ("hJetPt", "hJetPt", 100,0,10);
     hJetPt          -> Sumw2();
     fOutputList     -> Add(hJetPt);
 
-    // add binning arrays maybe idk what to do here either
-    hTPCnsigma      = new TH2F ("hTPCnsigma", "hTPCnsigma", 100,0,10,500,0,50);
+    hJetProtonPt    = new TH1D ("hJetProtonPt", "hJetProtonPt", 100,0,10);
+    hJetProtonPt    -> Sumw2();
+    fOutputList     -> Add(hJetProtonPt);
+
+    hTPCnsigma      = new TH2F ("hTPCnsigma", "hTPCnsigma", 100,0,10, 500,0,50);
     hTPCnsigma      -> Sumw2();
     fOutputList     -> Add(hTPCnsigma);
 
-    hTOFnsigma      = new TH2F ("hTOFnsigma", "hTOFnsigma", 100,0,10,500,0,50);
+    hTOFnsigma      = new TH2F ("hTOFnsigma", "hTOFnsigma", 100,0,10, 500,0,50);
     hTOFnsigma      -> Sumw2();
     fOutputList     -> Add(hTOFnsigma);
 
@@ -156,8 +156,18 @@ void AliAnalysisTaskJetFemto::UserCreateOutputObjects()  {
     hDCAxy          -> Sumw2();
     fOutputList     -> Add(hDCAxy);
 
-    // fLeadingIDs     -> SetString("");
-    // fOutputList     -> Add(fLeadingIDs);
+    //Track Selection
+    fESDTrackCuts = new AliESDtrackCuts("fESDTrackCuts");
+    fESDTrackCuts -> SetAcceptKinkDaughters(kFALSE);
+    fESDTrackCuts -> SetRequireTPCRefit(kTRUE);
+    fESDTrackCuts -> SetRequireITSRefit(kTRUE);
+    fESDTrackCuts -> SetMinNCrossedRowsTPC(70);
+    fESDTrackCuts -> SetMinRatioCrossedRowsOverFindableClustersTPC(0.7);
+    fESDTrackCuts -> SetMinNClustersITS(2);
+    fESDTrackCuts -> SetMaxChi2PerClusterITS(4);
+    fESDTrackCuts -> SetMaxChi2PerClusterTPC(4);
+
+    // fAODTrackCuts = new AliAODTrackSelection(fESDTrackCuts, 1);
 
     //Post Data
     PostData(1, fOutputList);
@@ -173,93 +183,83 @@ void AliAnalysisTaskJetFemto::UserExec(Option_t *)  {
 }
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::RunData()  {
-    //Select tracks and put into vector. Criteria?
+    //Select Tracks
     AliAODEvent *fAODEvent = dynamic_cast<AliAODEvent*>(InputEvent());
     if (!fAODEvent) Fatal("AliAnalysisTaskJetFemto::RunData", "No AOD event found, check the event handler.");
 
-    vector<Int_t> particle_ID;
+    //Initialisation
     Double_t pTmax(0);
     Int_t leading_ID;
     AliAODTrack leading_particle;
-    vector<AliAODTrack> protons;
+    vector<Int_t> particle_ID;
+    vector<AliAODTrack> particles;
 
+    //Preliminary Particle Selection
     for (Int_t i=0; i<fAODEvent->GetNumberOfTracks(); i++) {
         AliAODTrack *track = static_cast<AliAODTrack*>(fAODEvent->GetTrack(i));
-        // if(!track) {
-        //     hNumberOfTracks->Fill(18.5);
-        //     continue;
-        // }
         hNumberOfTracks -> Fill(0.5);
-
         hFullPt         -> Fill(track->Pt());
-        // if(!track->Charge()<=0) continue;
-        hNumberOfTracks -> Fill(1.5);
 
         Double_t nSigmaTPC_prot = fPIDResponse -> NumberOfSigmasTPC(track, AliPID::kProton);
         Double_t nSigmaTOF_prot = fPIDResponse -> NumberOfSigmasTOF(track, AliPID::kProton);
         Double_t nSigmaITS_prot = fPIDResponse -> NumberOfSigmasITS(track, AliPID::kProton);
-
         hTPCnsigma -> Fill(track->Pt(),nSigmaTPC_prot);
         hTOFnsigma -> Fill(track->Pt(),nSigmaTOF_prot);
+        Double_t eta = track->Eta();
 
-        if(TMath::Abs(track->Eta())>0.8) continue; // everything with eta > |0.8| is unreliable, right?
-        hNumberOfTracks -> Fill(2.5);
+        if(TMath::Abs(eta)>0.8) continue;
+        hNumberOfTracks -> Fill(1.5);
 
         if(track->Pt()>pTmax) {
             pTmax = track->Pt();
             leading_particle = *track;
             leading_ID = i;
-            hNumberOfTracks -> Fill(3.5);
-            // fLeadingIDs->SetString(fLeadingIDs->GetString() + Form("%i \n", leading_ID));
+            hNumberOfTracks -> Fill(2.5);
         }
 
-        if(!IsProtonCandidate(track)) continue;
-        hNumberOfTracks -> Fill(4.5);
-        Double_t mass = AliPID::ParticleMass(AliPID::kProton);
-        hProtonYield -> Fill(GetRapidity(track, mass));
+        if(!PassedTrackSelection(track)) continue;
 
         particle_ID.push_back(i);
-        protons.push_back(*track);
-        // hParticleIDs->Fill(i, track->Pt());
+        particles.push_back(*track);
     }
 
     if ((Int_t)particle_ID.size()<2) return;
     if (pTmax<fMaximumPt) return;
 
-    // vector<AliAODTrack*> jetParticipants;
+    //Initialisation for Jet Reconstruction
     vector<Int_t> jet_particle_ID;
     vector<AliAODTrack> jet;
+    vector<AliAODTrack> jetprotons;
     jet_particle_ID.push_back(leading_ID);
     hLeadingIDs->Fill(leading_ID, pTmax);
 
     Int_t exit(0);
     Int_t nPartAssociated(0);
-    // Double_t pt_leading(0);
 
     //4-Momentum of Leading Particle
     TLorentzVector P_jet (0.,0.,0.,0.);
     P_jet.SetPxPyPzE(leading_particle.Px(),leading_particle.Py(),leading_particle.Pz(),leading_particle.E());
     Double_t pt_leading = leading_particle.Pt();
 
-    //Jet Finder
+    //Jet Finder (anti-kT) ----------------------------------------------------------------------------------
     do {
-        //Initialization
+        //Initialisation
         Double_t distance_jet_min(1e+08);
         Double_t distance_bkg_min(1e+08);
         Int_t label_jet_particle(0);
         AliAODTrack jet_candidate;
         Int_t i_jet_particle(0);
 
-        for (Int_t i=0 ; i<(Int_t)particle_ID.size() ; i++)  { //loop over all eligible particles (protons right now)
+        for (Int_t i=0 ; i<(Int_t)particle_ID.size() ; i++)  { //Loop over all selected Particles
             hNumberOfTracks->Fill(5.5);
-            //Skip Leading Particle & Elements already associated to the Jet
+            // Skip Leading Particle & Elements already associated to the Jet
             if (particle_ID[i]==leading_ID) continue;
             if (particle_ID[i]==-1) continue;
             hNumberOfTracks->Fill(6.5);
 
             //Get Particle 4-Momentum
             TLorentzVector P_particle(0,0,0,0);
-            AliAODTrack particle = (AliAODTrack) protons.at(i);
+            AliAODTrack particle = (AliAODTrack) particles.at(i);
             P_particle.SetPxPyPzE(particle.Px(),particle.Py(),particle.Pz(),particle.E());
 
             //Variables
@@ -267,62 +267,63 @@ void AliAnalysisTaskJetFemto::RunData()  {
             Double_t one_over_pt2_lead = 1.0/(P_jet.Pt()*P_jet.Pt());
             Double_t deltaY   = P_particle.Rapidity()-P_jet.Rapidity();
             Double_t deltaPhi = TVector2::Phi_0_2pi(P_particle.Phi()-P_jet.Phi());
-            Double_t min      = Minimum (one_over_pt2_part,one_over_pt2_lead);
             Double_t Delta2   = deltaY*deltaY + deltaPhi*deltaPhi;
 
             //Distances
-            Double_t distance_jet = min*Delta2/(fJetRadius*fJetRadius); // 1/pT^2 * (∆Y^2 + ∆Phi^2)/r_Jet^2
+            Double_t distance_jet = one_over_pt2_lead*Delta2/(fJetRadius*fJetRadius);
             Double_t distance_bkg = one_over_pt2_part;
 
             //Find Minimum Distance Jet
-            if (distance_jet<distance_jet_min)  { // is current particle's dist to jet smaller than min dist
-                distance_jet_min=distance_jet;// update distance between jet particles -> gets smaller
-                label_jet_particle=particle_ID[i]; // remember ID
-                jet_candidate = particle; // find just 1 candidate with entire for loop, the closest one
-                i_jet_particle = i; // so we can remember i outside the loop
+            if (distance_jet<distance_jet_min)  {// particle's dist to jet is smaller than min dist
+                distance_jet_min=distance_jet;      // update jet distance
+                label_jet_particle=particle_ID[i];  // remember ID
+                jet_candidate = particle;           // find closest candidate in for-loop
+                i_jet_particle = i;                 // remember i outside the loop
                 hNumberOfTracks->Fill(7.5);
             }
 
             //Find Minimum Distance Bkg
-            if (distance_bkg<distance_bkg_min)  { // is current particle's dist to bkg smaller than min dist?
-                distance_bkg_min=distance_bkg;// update min distance between jet and background particles -> gets smaller
+            if (distance_bkg<distance_bkg_min)  { // particle's dist to bkg is smaller than min bkg dist?
+                distance_bkg_min=distance_bkg;// update min bkg distance
                 hNumberOfTracks->Fill(8.5);
             }
         } //for (Int_t i=0 ; i<(Int_t)particle_ID.size() ; i++)
 
-        // Looped over relevant particles (protons at the moment) and received the next jet candidate----------------------------------------
+        //Looped over selected Particles and received the next Jet Candidate----------------------------------------
 
-        if (distance_jet_min<=distance_bkg_min)  {// if distance track-jet is smaller than track-background, add to jet
+        if (distance_jet_min<=distance_bkg_min)  {// if distance track-jet smaller than track-bkg, add to jet
 
             //Add Particle to Jet
             jet_particle_ID.push_back(label_jet_particle);
             jet.push_back(jet_candidate);
 
-            //Update 4-Momentum of Leading Particle
+            //Update 4-Momentum of Jet
             TLorentzVector P_i(0,0,0,0);
             Double_t px_i = jet_candidate.Px();
             Double_t py_i = jet_candidate.Py();
             Double_t pz_i = jet_candidate.Pz();
             Double_t E_i  = jet_candidate.E();
             P_i.SetPxPyPzE(px_i,py_i,pz_i,E_i);
-            P_jet = P_jet + P_i; //update jet momentum
+            P_jet = P_jet + P_i;
 
             //Remove Element
             particle_ID[i_jet_particle] = -1;
             nPartAssociated++;
         } //if (distance_jet_min<=distance_bkg_min)
 
-        if (nPartAssociated>=((Int_t)particle_ID.size()-1)) exit=1; // if counter is bigger than size of particle ID vector, exit loop - we've gone through all the particles
-        if (distance_jet_min>distance_bkg_min) exit=2; // if updated jet dist is bigger than updated bkg dist, exit loop, no new jet candidate found
+        if (nPartAssociated>=((Int_t)particle_ID.size()-1)) exit=1; // gone through all the particles
+        if (distance_jet_min>distance_bkg_min) exit=2; // no jet candidates remaining, dist bkg > dist jet
 
-    } while (exit==0); // in every pass through this while loop, loop over all remaining protons, for each proton calculate dist to jet and to bkg, check if min distances need to be updated
-    // after looping over all particles, min distances and a new jet candidate are found -> proceed in while loop by checking if candidate is actually part of jet
-    // if it is, add to jet vector and remove from proton vector, proceed with remaining particles after resetting distances
-    // continue finding candidates until run enough times or until particles are closer to background than to jet
+    } while (exit==0);
 
+    //Jet Proton Selection
     for (Int_t i=0; i<(Int_t)jet.size();i++) {
         hJetPt->Fill(jet.at(i).Pt());
-    } //for (Int_t i=0; i<(Int_t)jet_particle_ID.size();i++)
+
+        if(!IsProton(jet.at(i))) continue; // collect jet protons
+        hJetProtonPt->Fill(jet.at(i).Pt());
+        jetprotons.push_back(jet.at(i));
+    } //for (Int_t i=0; i<(Int_t)jet.size();i++)
 
 
     //Check
@@ -346,46 +347,86 @@ Bool_t AliAnalysisTaskJetFemto::GetEvent ()  {
     return kTRUE;
 }
 //__________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection(AliAODTrack *track) {
-    Bool_t kPassedTrackSelection = kFALSE;
-
-}
-//__________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::IsProtonCandidate (AliAODTrack *track)  {
-
-    //Initialization
+Bool_t AliAnalysisTaskJetFemto::IsProton(AliAODTrack track) {
+    //Initialisation
     Bool_t isProton=(kFALSE);
 
-    Double_t DCAxy = GetDCAtoPrimaryVertex (track,0);
+    //Variables
+    Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (&track,AliPID::kProton);
+    Double_t nsigmaTOF = fPIDResponse -> NumberOfSigmasTOF (&track,AliPID::kProton);
+    Double_t nsigmaITS = fPIDResponse -> NumberOfSigmasITS (&track,AliPID::kProton);
+    Double_t pt = track.Pt();
 
-    // if (!PassedTrackSelection(track,0)) return isProton;
-    if (!IsHighPurityProton(track))     return isProton;
-    if (TMath::Abs(DCAxy)>0.1)          return isProton;
-    // if (track->P()>1.0)                 return isProton;
+    //Selection
+    if (!(pt<0.7 && TMath::Abs(nsigmaITS)<3.0 && TMath::Abs(nsigmaTPC)<3.0)) return isProton;
+    if (!(pt>0.7 && TMath::Abs(nsigmaTPC)<2.0 && TMath::Abs(nsigmaTOF)<2.0)) return isProton;
 
     isProton=kTRUE;
     return isProton;
 }
 //__________________________________________________________________________________________________________________________________
-Bool_t AliAnalysisTaskJetFemto::IsHighPurityProton (AliAODTrack *track)  {
+Bool_t AliAnalysisTaskJetFemto::PassedTrackSelection (AliAODTrack *track)  {
 
-    //Variables
-    Double_t nsigmaTPC = fPIDResponse -> NumberOfSigmasTPC (track,AliPID::kProton);
-    Double_t nsigmaTOF = fPIDResponse -> NumberOfSigmasTOF (track,AliPID::kProton);
-    Double_t nsigmaITS = fPIDResponse -> NumberOfSigmasITS (track,AliPID::kProton);
-    // Double_t nsigmaITS_recalib = GetRecalibratedITSnsigma (nsigmaITS,track->Eta(),track->P());
-    Double_t pt = track->Pt();
+    //Initialisation
+    Bool_t passedTrkSelection=(kFALSE);
 
-    //Selection
-    if (pt<0.7 /*&& TMath::Abs(nsigmaITS_recalib)<3.0*/ && TMath::Abs(nsigmaTPC)<3.0) return kTRUE;
-    if (pt>0.7 && TMath::Abs(nsigmaTPC)<2.0 && TMath::Abs(nsigmaTOF)<2.0)         return kTRUE;
+    //Basic Track Selection
+    // if (!fAODTrackCuts->IsTrackAccepted(track)) return passedTrkSelection; // include AliAODTrackSelection
 
-    return kFALSE;
+    //Fixed Cuts
+    if (!track->HasPointOnITSLayer(0))                  return passedTrkSelection;
+    if (!track->HasPointOnITSLayer(1))                  return passedTrkSelection;
+
+    //Track Variables
+    Int_t nTPCcr      = track->GetTPCCrossedRows();
+    Int_t nTPCfind     = track->GetTPCNclsF();
+    Int_t nITScls     = track->GetITSNcls();
+    Int_t nTPCcls     = track->GetTPCNcls();
+    Int_t nTPCclsdEdx = track->GetTPCsignalN();
+    Double_t chi2ITS  = track->GetITSchi2();
+    Double_t chi2TPC  = track->GetTPCchi2();
+    Double_t DCAxy    = TMath::Abs(GetDCAtoPrimaryVertex(track,0));
+    Double_t DCAz     = TMath::Abs(GetDCAtoPrimaryVertex(track,1));
+    Double_t cr_over_findable = (Double_t)nTPCcr/((Double_t)nTPCfind);
+    Double_t chi2TPC_NDF      = chi2TPC/((Double_t)nTPCcls) ;
+
+    //Set of Cuts
+    Int_t nTPCcr_min = 70;
+    Int_t nITScls_min = 2;
+    Int_t nTPCclsdEdx_min = 50;
+    Double_t chi2ITS_max = 4.;
+    Double_t chi2TPC_NDF_max = 4.;
+    Double_t dcaxy_max = 0.1;
+    Double_t dcaz_max = 1.;
+    Double_t cr_over_findable_min = 0.7;
+
+    //Selections
+    if (nTPCcr<nTPCcr_min)                     return passedTrkSelection;
+    if (nITScls<nITScls_min)                   return passedTrkSelection;
+    if (nTPCclsdEdx<nTPCclsdEdx_min)           return passedTrkSelection;
+    if (cr_over_findable<cr_over_findable_min)   return passedTrkSelection;
+    if (chi2TPC_NDF>chi2TPC_NDF_max)           return passedTrkSelection;
+    if (chi2ITS>chi2ITS_max)                   return passedTrkSelection;
+    if (DCAxy>dcaxy_max)                       return passedTrkSelection;
+    if (DCAz>dcaz_max)                         return passedTrkSelection;
+
+    passedTrkSelection = kTRUE;
+    return passedTrkSelection;
+}
+//__________________________________________________________________________________________________________________________________
+Double_t AliAnalysisTaskJetFemto::GetDCAtoPrimaryVertex (AliAODTrack *track, Int_t index)  {
+
+    Double_t dca[2]; // 0 = DCAxy, 1 = DCAz
+    Double_t covMatrix[3];
+    if (!track->PropagateToDCA (fAODEvent->GetPrimaryVertex(),fAODEvent->GetMagneticField(),10000,dca,covMatrix)) return -999;
+    hDCAxy->Fill(dca[0]);
+
+    return dca[index];
 }
 //__________________________________________________________________________________________________________________________________
 Double_t AliAnalysisTaskJetFemto::GetRapidity (AliAODTrack *track, Double_t mass)  {
 
-    //Initialization
+    //Initialisation
     Double_t y(-999);
 
     //Rapidity Calculation
@@ -396,25 +437,6 @@ Double_t AliAnalysisTaskJetFemto::GetRapidity (AliAODTrack *track, Double_t mass
     y = 0.5*TMath::Log((E+pz)/(E-pz));
 
     return y;
-}
-//_______________________________________________________________________________________________________________________________________
-Double_t  AliAnalysisTaskJetFemto::Minimum (Double_t x1, Double_t x2)  {
-
-    Double_t x_min(x1);
-    if (x1<x2) x_min = x1;
-    if (x1>x2) x_min = x2;
-
-    return x_min;
-}
-//__________________________________________________________________________________________________________________________________
-Double_t AliAnalysisTaskJetFemto::GetDCAtoPrimaryVertex (AliAODTrack *track, Int_t index)  {
-
-    Double_t dca[2];
-    Double_t covMatrix[3];
-    if (!track->PropagateToDCA (fAODEvent->GetPrimaryVertex(),fAODEvent->GetMagneticField(),10000,dca,covMatrix)) return -999;
-    hDCAxy->Fill(dca[0]);
-
-    return dca[index];
 }
 //__________________________________________________________________________________________________________________________________
 void AliAnalysisTaskJetFemto::Terminate(Option_t *)  {

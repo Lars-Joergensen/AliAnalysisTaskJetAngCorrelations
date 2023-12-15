@@ -24,20 +24,21 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #define nRunsPerMaster  1
 
 //Functions
-AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge );
-void LoadAnalysisTask (AliAnalysisManager *mgr);
+AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merge );
+void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr);
 void EventHandler     (AliAnalysisManager *mgr);
 void LoadPIDResponse();
+void SetInputRuns (Int_t iChunk, AliAnalysisAlien *alien, const char *mode);
 
 //Test
 Bool_t test = (kFALSE);
 
 //___________________________________________________________________________________________________________________________________________
-void LoadAnalysisTask (AliAnalysisManager *mgr)  {
+void LoadAnalysisTask (Int_t iChunk, AliAnalysisManager *mgr)  {
 
     //Run Mode
     Bool_t isITSrecalib = (kFALSE);
-    Bool_t runData      = (kTRUE);
+    Bool_t runData      = (kFALSE);
 
     //Load Analysis Task
     gROOT->LoadMacro("AliAnalysisTaskJetFemto.cxx+g");
@@ -50,7 +51,7 @@ void LoadAnalysisTask (AliAnalysisManager *mgr)  {
 
     //Analysis Task
     AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_JetReconstruction_Femtoscopy");
-    // task -> SelectCollisionCandidates (AliVEvent::kINT7);
+    task -> SelectCollisionCandidates (AliVEvent::kINT7);
     task -> AliAnalysisTaskJetFemto::SetRunningMode(runData);
     mgr -> AddTask(task);
     mgr -> ConnectInput (task,0,mgr->GetCommonInputContainer());
@@ -58,25 +59,25 @@ void LoadAnalysisTask (AliAnalysisManager *mgr)  {
     mgr -> ConnectOutput(task,2,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
 }
 //___________________________________________________________________________________________________________________________________________
-void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
+void runAnalysisJetFemto (Int_t iChunk=0, const char *mode="full", Bool_t merge=kTRUE)  {
 
     //Grid Connection
     TGrid::Connect("alien://");
 
     //Alien Handler
-    AliAnalysisGrid *alienGridHandler = CreateAlienHandler (mode,merge);
+    AliAnalysisGrid *alienGridHandler = CreateAlienHandler (iChunk,mode,merge);
     if (!alienGridHandler) return;
 
     //Analysis Manager
     AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisManager");
     mgr->SetGridHandler(alienGridHandler);
 
-    //Event Handler, PID
+    //Event Handler, PID & Centrality
     EventHandler(mgr);
     LoadPIDResponse();
 
     //Analysis Task
-    LoadAnalysisTask(mgr);
+    LoadAnalysisTask(iChunk,mgr);
 
     //Start analysis
     if (!mgr->InitAnalysis())  return;
@@ -84,7 +85,7 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
     mgr->StartAnalysis("grid");
 };
 //___________________________________________________________________________________________________________________________________________
-AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge )  {
+AliAnalysisGrid *CreateAlienHandler (Int_t iChunk, const char *mode, Bool_t merge )  {
 
     //Alien Handler
     AliAnalysisAlien *alien = new AliAnalysisAlien();
@@ -101,19 +102,19 @@ AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge )  {
     alien->SetDataPattern("*ESDs/pass2/AOD145/*AOD.root");
     alien->AddRunNumber(167813);
     alien->SetNrunsPerMaster(nRunsPerMaster);
-    alien->SetGridWorkingDir(Form("%s",GRIDWorkingDir));
+    alien->SetGridWorkingDir(Form("%s_%d",GRIDWorkingDir,iChunk));
     alien->SetGridOutputDir("OUTPUT");
     alien->SetAnalysisSource(Form("%s.cxx",AnalysisTask));
     alien->SetAdditionalLibs(Form("%s.cxx  %s.h",AnalysisTask,AnalysisTask));
     alien->SetMergeViaJDL(merge);
-    alien->SetMaxMergeStages(1);
-    alien->SetAnalysisMacro(Form("%s.C",AnalysisMacro));
+    alien->SetMaxMergeStages(2);
+    alien->SetAnalysisMacro(Form("%s_%d.C",AnalysisMacro,iChunk));
     alien->SetSplitMaxInputFileNumber(50);
     alien->SetMasterResubmitThreshold(90);
     alien->SetTTL(TTL);
-    alien->SetExecutable(Form("%s.sh",AnalysisMacro));
+    alien->SetExecutable(Form("%s_%d.sh",AnalysisMacro,iChunk));
     alien->SetInputFormat("xml-single");
-    alien->SetJDLName(Form("%s.jdl",AnalysisMacro));
+    alien->SetJDLName(Form("%s_%d.jdl",AnalysisMacro,iChunk));
     alien->SetMergeExcludes("EventStat_temp.root");
     alien->SetPrice(1);
     alien->SetSplitMode("se");
