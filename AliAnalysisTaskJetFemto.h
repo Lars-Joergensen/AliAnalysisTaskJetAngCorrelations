@@ -48,12 +48,10 @@ public:
 
     //User Functions
     Bool_t   GetEvent                   ();
-    Bool_t   IsHighPurityProton         (AliAODTrack *track);
     Bool_t   IsProton                   (AliAODTrack  track);
     Bool_t   PassedTrackSelection       (AliAODTrack *track);
     Double_t GetDCAtoPrimaryVertex      (AliAODTrack *track, Int_t index);
     Double_t GetRapidity                (AliAODTrack *track, Double_t mass);
-    Double_t Minimum                    (Double_t x1, Double_t x2);
 
 private:
     AliAODEvent     *fAODEvent;     //!
@@ -70,6 +68,8 @@ private:
     TH1D *hFullPt;                  //!
     TH1D *hJetPt;                   //!
     TH1D *hJetProtonPt;             //!
+    TH1D *hSameEventRelMomentum;    //!
+    TH1D *hMixedEventRelMomentum;   //!
     TH1F *hProtonYield;             //!
     TH2F *hTPCnsigma;               //!
     TH2F *hTOFnsigma;               //!
