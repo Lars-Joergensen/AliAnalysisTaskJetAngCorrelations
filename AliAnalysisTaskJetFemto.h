@@ -11,13 +11,15 @@
 #include "AliAnalysisTaskSE.h"
 #include "AliMultSelection.h"
 #include "AliAnalysisUtils.h"
-// #include "AliAODtrackCuts.h"
+#include "AliAODTrackSelection.h"
 #include "AliAnalysisTask.h"
 #include "AliPIDResponse.h"
+#include "AliESDtrackCuts.h"
 #include "AliAODVertex.h"
 #include "AliEventCuts.h"
 #include "AliAODEvent.h"
 #include "AliAODTrack.h"
+#include "TObjString.h"
 #include "THnSparse.h"
 #include "TList.h"
 #include "TH1F.h"
@@ -45,29 +47,36 @@ public:
     void  RunData();
 
     //User Functions
-    Bool_t  GetEvent            ();
-    Bool_t  IsHighPurityProton  (AliAODTrack *track);
-    Bool_t  IsProtonCandidate   (AliAODTrack *track);
-    Double_t GetRapidity        (AliAODTrack *track, Double_t mass);
-    Double_t Minimum            (Double_t x1, Double_t x2);
+    Bool_t   GetEvent                   ();
+    Bool_t   IsProton                   (AliAODTrack  track);
+    Bool_t   PassedTrackSelection       (AliAODTrack *track);
+    Double_t GetDCAtoPrimaryVertex      (AliAODTrack *track, Int_t index);
+    Double_t GetRapidity                (AliAODTrack *track, Double_t mass);
 
 private:
     AliAODEvent     *fAODEvent;     //!
     AliPIDResponse  *fPIDResponse;  //!
+    AliAODTrackSelection *fAODTrackCuts;         //!
+    AliESDtrackCuts *fESDTrackCuts; //!
     TList           *fOutputList;   //!
     TList           *fQAList;       //!
     Bool_t           fRunData;      //
 
     TH1F *hNumberOfEvents;          //!
+    TH1F *hNumberOfTracks;          //!
+    TH2F *hLeadingIDs;              //!
     TH1D *hFullPt;                  //!
-    TH1I *hProtonYield;             //!
-    TH1F *hTPCnsigma;               //!
-    TH1F *hTOFnsigma;               //!
+    TH1D *hJetPt;                   //!
+    TH1D *hJetProtonPt;             //!
+    TH1D *hSameEventRelMomentum;    //!
+    TH1D *hMixedEventRelMomentum;   //!
+    TH1F *hProtonYield;             //!
+    TH2F *hTPCnsigma;               //!
+    TH2F *hTOFnsigma;               //!
     TH1F *hDCAxy;                   //!
-    // ^ actually THnSparse (THnSparseF in cxx)
 
-    // vector<AliAODTrack*> leadingParticles; //!
     Double_t fJetRadius;
+    Double_t fMaximumPt;
 
     AliAnalysisTaskJetFemto(const AliAnalysisTaskJetFemto&);
     AliAnalysisTaskJetFemto& operator=(const AliAnalysisTaskJetFemto&);
