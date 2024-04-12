@@ -16,6 +16,7 @@
 #include "AliAODTrackSelection.h"
 #include "AliFemtoDreamEvent.h"
 #include "AliFemtoDreamTrack.h"
+#include "fastjet/PseudoJet.hh"
 #include "AliAnalysisTaskSE.h"
 #include "AliMultSelection.h"
 #include "AliAnalysisUtils.h"
@@ -63,9 +64,10 @@ public:
     //User Functions
     Bool_t   GetEvent                   ();
     Bool_t   IsProton                   (AliAODTrack  track);
-    Bool_t   PassedTrackSelection       (AliAODTrack *track);
-    Double_t GetDCAtoPrimaryVertex      (AliAODTrack *track, Int_t index);
-    Double_t GetRapidity                (AliAODTrack *track, Double_t mass);
+    Bool_t   IsPion                     (AliAODTrack  track);
+    Bool_t   PassedTrackSelection       (AliAODTrack  track);
+    Double_t GetDCAtoPrimaryVertex      (AliAODTrack  track, Int_t index);
+    Double_t GetRapidity                (AliAODTrack  track, Double_t mass);
 
 private:
     void ResetGlobalTrackReference();
@@ -92,26 +94,54 @@ private:
 
     // Histograms
     TH1F *hNumberOfEvents;          //!
-    TH1F *hNumberOfTracks;          //!
-    TH2F *hLeadingIDs;              //!
-    TH1F *hLeadingEta;              //!
-    TH1F *hDeltaEta;                //!
-    TH1F *hFullEta;                 //!
-    TH1D *hFullPt;                  //!
-    TH1D *hJetPt;                   //!
-    TH1D *hJetProtonPt;             //!
-    TH1D *hLeadingPt;               //!
-    // v not yet used v
-    TH1F *hProtonYield;             //!
+    TH1F *hNumberOfJets;            //!
+    TH1F *hNumberOfHighPtJets;      //!
+    TH1F *hEventProtocol;           //!
+    TH1F *hTrackProtocol;           //!
+    TH1I *hJetParticleID;           //!
+    TH1I *hParticleID;              //!
+    TH1I *hUserIndex;               //!
+    TH1F *hIDsafe;                  //!
+    TH1F *hIDfail;                  //!
+
+    // TH1F *hDeltaY;                  //!
+    TH1F *hEtaFullEvent;            //!
+
+    TH1D *hPtFullEvent;             //!
+    TH1D *hFullConePt;              //!
+    TH1D *hPtJetParticle;           //!
+    TH1D *hJetRapidity;             //!
+    TH1D *hPtTotalJet;              //!
+    TH1D *hConeBkgPt;               //!
+    TH1D *hPtSubtractedJet;         //!
+    TH1D *hPtJetProton;             //!
+    TH1D *hPtJetPion;               //!
+    TH1D *hPtDiff;                  //!
+
+    TH1I *hNumberOfParticlesInJet;  //!
+    TH1I *hNumberOfJetsInEvent;     //!
+    TH1I *hNumberOfTracksBeforeCuts;//!
+
+    TH1D *hJetConeRadius;           //!
+
     TH2F *hTPCnsigma;               //!
+    TH2F *hTPCnsigmaProton;         //!
     TH2F *hTOFnsigma;               //!
-    TH1F *hDCAxy;                   //!
-    TH1F *hDCAz;                    //!
-    TH1F *hDCAzJet;                 //!
-    TH1F *hDeltaTheta;              //!
+    TH2F *hTOFnsigmaProton;         //!
+    TH2F *hITSnsigma;               //!
+    TH1F *hTPCnsigmaBins[33];       //!
+    TH1F *hTOFnsigmaBins[23];       //!
+
+    TH1F *hDCAxyFullEvent;          //!
+    TH1F *hDCAzFullEvent;           //!
+    TH1F *hDCAzJetProton;                 //!
+    TH1F *hDCAzJetProtons[10];      //!
+    TH1D *hPtJetProtonDCAz[10];     //!
+    TH2F *hTPCnsigmaJetProtonDCAz[10]; //!
+    TH2F *hTOFnsigmaJetProtonDCAz[10]; //!
 
     Double_t fJetRadius;
-    Double_t fMaximumPt;
+    Double_t fMinJetPt;
     int fTrackBufferSize;           //
 
     AliAnalysisTaskJetFemto(const AliAnalysisTaskJetFemto&);
@@ -121,5 +151,7 @@ private:
 
 };
 //___________________________________________________________________________________________________________________________________________
-
 #endif
+
+
+//___________________________________________________________________________________________________________________________________________

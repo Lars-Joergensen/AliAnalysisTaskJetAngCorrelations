@@ -21,12 +21,12 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #define GRIDWorkingDir  "JET_FEMTOSCOPY_WORKING_DIR"
 #define AnalysisMacro   "AnalysisJetFemtoscopy"
 #define AnalysisTask    "AliAnalysisTaskJetFemto"
-#define TTL             20000
+#define TTL             5000
 #define nRunsPerMaster  1
 
 //Functions
 AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge, int effort );
-void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton);
+void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton, int effort);
 void EventHandler     (AliAnalysisManager *mgr);
 void LoadPIDResponse();
 void SetInputRuns(AliAnalysisAlien *alien, const char *mode, int effort);
@@ -35,7 +35,7 @@ void SetInputRuns(AliAnalysisAlien *alien, const char *mode, int effort);
 Bool_t test = (kFALSE);
 
 //___________________________________________________________________________________________________________________________________________
-void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton)  {
+void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton, int effort)  {
 
     //Run Mode
     Bool_t runData      = (kTRUE);
@@ -52,10 +52,9 @@ void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, Al
 
     //Analysis Task
     AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_JetReconstruction_Femtoscopy", isMC);
-    // task -> SelectCollisionCandidates (AliVEvent::kMB); // removed in working base but throws execution errors if removed here; kMB = minimum bias, kINT7 = BIT(1)
 
-    if(CentEst == "kInt7"){
-        if(isRun1) {
+    if(CentEst == "kInt7"){// INT7 = BIT(1)
+        if(isRun1||(effort==0)) {
             task->SetTrigger(AliVEvent::kMB);
             task->SelectCollisionCandidates(AliVEvent::kMB);
             std::cout << "Added kMB Trigger \n";
@@ -76,8 +75,8 @@ void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, Al
     }
 
     /* task->SetEventCuts(evtCuts);
-    task->SetTrackCutsProton(fTrackCutsProton); // check if func exists
-    task->SetTrackCutsAntiproton(fTrackCutsAntiproton); // check if func exists
+    task->SetTrackCutsProton(fTrackCutsProton);
+    task->SetTrackCutsAntiproton(fTrackCutsAntiproton);
     task->SetCollectionConfig(config);
     task->SetIsMC(isMC); */
 
@@ -88,7 +87,15 @@ void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, Al
     mgr -> ConnectOutput(task,2,mgr->CreateContainer("Femtoscopy", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
     mgr -> ConnectOutput(task,3,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
 }
-//___________________________________________________________________________________________________________________________________________
+
+
+//###########################################################################################################################################
+//###########################################################################################################################################
+//                                                            Analysis Task
+//###########################################################################################################################################
+//###########################################################################################################################################
+
+
 void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
     bool isMC               = false;
     bool isRun1             = false;
@@ -127,13 +134,12 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
     }
     evtCuts->SetSphericityCuts(fSpherDown, 1.0, 0.5);
 
-    AliFemtoDreamTrackCuts *fTrackCutsProton=new AliFemtoDreamTrackCuts();
-    /* fTrackCutsProton->SetIsMonteCarlo(isMC);
+    AliFemtoDreamTrackCuts *fTrackCutsProton = new AliFemtoDreamTrackCuts();
+    fTrackCutsProton->SetIsMonteCarlo(isMC);
     fTrackCutsProton->SetCutCharge(1);
     fTrackCutsProton->SetPtRange(0.14, 4.0);
     fTrackCutsProton->SetEtaRange(-0.8, 0.8);
     fTrackCutsProton->SetNClsTPC(80);
-
     fTrackCutsProton->SetDCAReCalculation(true);//Get the dca from the PropagateToVetex
     if ( !MCtemplatefit ) {
         fTrackCutsProton->SetFilterBit(96); // Filterbit 5+6
@@ -155,10 +161,10 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
         fTrackCutsProton->SetPlotDCADist(true);
         //fTrackCutsProton->SetOriginMultiplicityHists(true);
         fTrackCutsProton->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
-    } */
+    }
 
-    AliFemtoDreamTrackCuts *fTrackCutsAntiproton=new AliFemtoDreamTrackCuts();
-    /* fTrackCutsAntiproton->SetIsMonteCarlo(isMC);
+    AliFemtoDreamTrackCuts *fTrackCutsAntiproton = new AliFemtoDreamTrackCuts();
+    fTrackCutsAntiproton->SetIsMonteCarlo(isMC);
     fTrackCutsAntiproton->SetCutCharge(-1);
     fTrackCutsAntiproton->SetPtRange(0.14, 4.0);
     fTrackCutsAntiproton->SetEtaRange(-0.8, 0.8);
@@ -185,7 +191,7 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
         //fTrackCutsAntiproton->SetOriginMultiplicityHists(true);
         fTrackCutsAntiproton->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
     }
-    std::vector<int> PDGParticles;
+    /* std::vector<int> PDGParticles;
     PDGParticles.push_back(2212); // p+
     PDGParticles.push_back(-2212); // p-
 
@@ -285,7 +291,7 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
     LoadPIDResponse();
 
     //Analysis Task
-    LoadAnalysisTask(mgr, CentEst, isRun1, evtCuts, config, fTrackCutsProton, fTrackCutsAntiproton);
+    LoadAnalysisTask(mgr, CentEst, isRun1, evtCuts, config, fTrackCutsProton, fTrackCutsAntiproton, effort);
 
     //Start analysis
     if (!mgr->InitAnalysis())  return;
@@ -305,9 +311,9 @@ AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge, int effort 
     alien->SetAliPhysicsVersion(ALIPHYSICS_VER);
     alien->AddIncludePath("$ALICE_PHYSICS/include");
     alien->AddIncludePath("$ALICE_ROOT/include");
-    alien->SetGridDataDir("/alice/data/2011/LHC11h_2");
+    alien->SetGridDataDir("/alice/data/2018/LHC18b");
     alien->SetRunPrefix("000");
-    alien->SetDataPattern("*ESDs/pass2/AOD145/*AOD.root");
+    alien->SetDataPattern("*pass2/AOD/*AliAOD.root");
     SetInputRuns(alien, mode, effort);
     alien->SetNrunsPerMaster(nRunsPerMaster);
     alien->SetGridWorkingDir(Form("%s",GRIDWorkingDir));
@@ -342,15 +348,17 @@ void LoadPIDResponse ()  {
 }
 //___________________________________________________________________________________________________________________________________________
 void SetInputRuns (AliAnalysisAlien *alien, const char *mode, int effort) {
-    Int_t run0[] = { 167693, 167706, 167711, 167713, 167806, 167807, 167808, 167813, 167814, 167818, 167902, 167903, 167915, 167920, 167921, 167985, 167986, 167987, 167988, 168066, 168068, 168069, 168076, 168103, 168104, 168105, 168107, 168108, 168115, 168171, 168172, 168173, 168175, 168181, 168203, 168204, 168205, 168206, 168207, 168208, 168212, 168213, 168310, 168311, 168318, 168322, 168325, 168341, 168342, 168356, 168361, 168362, 168458, 168460, 168461, 168464, 168467, 168511, 168512, 168514, 168777, 168826, 168984, 168988, 168992, 169035, 169040, 169044, 169045, 169091, 169094, 169099, 169138, 169143, 169144, 169145, 169148, 169156, 169160, 169167, 169238, 169411, 169415/*, 169417, 169418, 169419, 169420, 169475, 169498, 169504, 169506, 169512, 169515, 169550, 169553, 169554, 169555, 169557, 169584, 169586 , 169587, 169588, 169590, 169591, 169628, 169835, 169837, 169838, 169846, 169855, 169858, 169859, 169918, 169919, 169920, 169922, 169923, 169924, 169926, 169956, 169961, 169965, 169969, 169975, 169981, 170027, 170036, 170038, 170040, 170081, 170083, 170084, 170085, 170088, 170089, 170091, 170152, 170155, 170159, 170163, 170193, 170195, 170203, 170204, 170207, 170208, 170228, 170230, 170264, 170267, 170268, 170269, 170270, 170306, 170308, 170309, 170311, 170312, 170313, 170315, 170387, 170388, 170389, 170390, 170546, 170552, 170556, 170572, 170593  */};
+    Int_t run0[] = { 285447, 285396, 285365, 285364, 285347, 285328, 285327, 285224, 285222, 285203, 285202, 285200, 285165, 285127, 285125, 285108, 285106, 285066, 285065, 285064, 285015, 285014, 285013, 285012, 285011, 285010, 285009, 285008 };
     Int_t nRuns(0);
     nRuns = sizeof(run0)/sizeof(Int_t);
 
     if(effort==0) {
-        alien->AddRunNumber(167813);
+        alien->AddRunNumber(285365);
     } else if(effort==1) {
         for(Int_t iRun=0; iRun<nRuns; iRun++) {
             alien->AddRunNumber(run0[iRun]);
         }
+    } else {
+        printf("#####         No valid option: effort!         #####\n");
     }
 }
