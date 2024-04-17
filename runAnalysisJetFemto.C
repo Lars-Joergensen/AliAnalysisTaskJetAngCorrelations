@@ -21,23 +21,25 @@ R__LOAD_LIBRARY(AliAnalysisTaskJetFemto_cxx.so)
 #define GRIDWorkingDir  "JET_FEMTOSCOPY_WORKING_DIR"
 #define AnalysisMacro   "AnalysisJetFemtoscopy"
 #define AnalysisTask    "AliAnalysisTaskJetFemto"
-#define TTL             20000
+#define TTL             5000
 #define nRunsPerMaster  1
 
 //Functions
-AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge );
-void LoadAnalysisTask (AliAnalysisManager *mgr);
+AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge, int effort );
+void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton, int effort);
 void EventHandler     (AliAnalysisManager *mgr);
 void LoadPIDResponse();
+void SetInputRuns(AliAnalysisAlien *alien, const char *mode, int effort);
 
 //Test
 Bool_t test = (kFALSE);
 
 //___________________________________________________________________________________________________________________________________________
-void LoadAnalysisTask (AliAnalysisManager *mgr)  {
+void LoadAnalysisTask (AliAnalysisManager *mgr, TString CentEst, bool isRun1, AliFemtoDreamEventCuts *evtCuts, AliFemtoDreamCollConfig *config, AliFemtoDreamTrackCuts *fTrackCutsProton, AliFemtoDreamTrackCuts *fTrackCutsAntiproton, int effort)  {
 
     //Run Mode
     Bool_t runData      = (kTRUE);
+    bool isMC           = (false);
 
     //Load Analysis Task
     gROOT->LoadMacro("AliAnalysisTaskJetFemto.cxx+g");
@@ -49,31 +51,81 @@ void LoadAnalysisTask (AliAnalysisManager *mgr)  {
     TString fileName = AliAnalysisManager::GetCommonFileName();
 
     //Analysis Task
-    AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_JetReconstruction_Femtoscopy");
-    task -> SelectCollisionCandidates (AliVEvent::kMB); // removed in working base but throws execution errors if removed here; kMB = minimum bias, kINT7 = BIT(1)
+    AliAnalysisTaskJetFemto *task = new AliAnalysisTaskJetFemto ("task_JetReconstruction_Femtoscopy", isMC);
+
+    if(CentEst == "kInt7"){// INT7 = BIT(1)
+        if(isRun1||(effort==0)) {
+            task->SetTrigger(AliVEvent::kMB);
+            task->SelectCollisionCandidates(AliVEvent::kMB);
+            std::cout << "Added kMB Trigger \n";
+        } else {
+            task->SetTrigger(AliVEvent::kINT7);
+            task->SelectCollisionCandidates(AliVEvent::kINT7);
+            std::cout << "Added kINT7 Trigger \n";
+        }
+    } else if (CentEst == "kHM") {
+        task->SelectCollisionCandidates(AliVEvent::kHighMultV0);
+        std::cout << "Added kHighMultV0 Trigger \n";
+    }else{
+        std::cout << "=====================================================================" << std::endl;
+        std::cout << "=====================================================================" << std::endl;
+        std::cout << "Centrality Estimator not set, fix it else your Results will be empty!" << std::endl;
+        std::cout << "=====================================================================" << std::endl;
+        std::cout << "=====================================================================" << std::endl;
+    }
+
+    /* task->SetEventCuts(evtCuts);
+    task->SetTrackCutsProton(fTrackCutsProton);
+    task->SetTrackCutsAntiproton(fTrackCutsAntiproton);
+    task->SetCollectionConfig(config);
+    task->SetIsMC(isMC); */
+
     task -> AliAnalysisTaskJetFemto::SetRunningMode(runData);
     mgr -> AddTask(task);
     mgr -> ConnectInput (task,0,mgr->GetCommonInputContainer());
     mgr -> ConnectOutput(task,1,mgr->CreateContainer("Jets", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
-    mgr -> ConnectOutput(task,2,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
+    mgr -> ConnectOutput(task,2,mgr->CreateContainer("Femtoscopy", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
+    mgr -> ConnectOutput(task,3,mgr->CreateContainer("QAPlots", TList::Class(), AliAnalysisManager::kOutputContainer, fileName.Data()));
 }
-//___________________________________________________________________________________________________________________________________________
-void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
+
+
+//###########################################################################################################################################
+//###########################################################################################################################################
+//                                                            Analysis Task
+//###########################################################################################################################################
+//###########################################################################################################################################
+
+
+void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE )  {
+    bool isMC               = false;
+    bool isRun1             = false;
+    bool oldreject          = false;
+    bool MCtemplatefit      = false;
+    bool doSharedCut        = false;
+    float fSpherDown        = 0.7;
+    float fdPhidEta         = 0.01;
+    TString CentEst         = "kINT7";
+    const char *cutVar      = "0";
+    int effort              = 1;
+    
+
 
     //Grid Connection
     TGrid::Connect("alien://");
 
     //Alien Handler
-    AliAnalysisGrid *alienGridHandler = CreateAlienHandler (mode,merge);
+    AliAnalysisGrid *alienGridHandler = CreateAlienHandler (mode,merge,effort);
     if (!alienGridHandler) return;
 
     //Analysis Manager
     AliAnalysisManager *mgr = new AliAnalysisManager("AnalysisManager");
     mgr->SetGridHandler(alienGridHandler);
 
-    /* AliFemtoDreamEventCuts *evtCuts = new AliFemtoDreamEventCuts;
+    //===============================================================================================================
+    // FEMTOSCOPY
+    AliFemtoDreamEventCuts *evtCuts = new AliFemtoDreamEventCuts;
     evtCuts->CleanUpMult(false,false,false,true);
-    if(isRun1 && oldreject) { // add bool
+    if(isRun1 && oldreject) {
         evtCuts->SetCutMinContrib(3);
         evtCuts->SetZVtxPosition(-8., 8.);
     } else {
@@ -82,67 +134,66 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
     }
     evtCuts->SetSphericityCuts(fSpherDown, 1.0, 0.5);
 
-    AliFemtoDreamTrackCuts *fTrackCutsPosPion=new AliFemtoDreamTrackCuts();
-    fTrackCutsPosPion->SetIsMonteCarlo(isMC);
-    fTrackCutsPosPion->SetCutCharge(1);
-    fTrackCutsPosPion->SetPtRange(0.14, 4.0);
-    fTrackCutsPosPion->SetEtaRange(-0.8, 0.8);
-    fTrackCutsPosPion->SetNClsTPC(80);
-
-    fTrackCutsPosPion->SetDCAReCalculation(true);//Get the dca from the PropagateToVetex
-    if ( !MCtemplatefit ) { // add bool
-        fTrackCutsPosPion->SetFilterBit(96); // Filterbit 5+6
-        fTrackCutsPosPion->SetDCAVtxZ(0.3);
-        fTrackCutsPosPion->SetDCAVtxXY(0.3);
-    } else {
-        fTrackCutsPosPion->SetFilterBit(128); // Filterbit 7
-    }
-    if ( doSharedCut ) { fTrackCutsPosPion->SetCutSharedCls(true);} // add bool
-    fTrackCutsPosPion->SetNClsTPC(80); // In Indico + additional Chi²/NDF <4
-    fTrackCutsPosPion->SetPID(AliPID::kPion, 0.5);
-    fTrackCutsPosPion->SetRejLowPtPionsTOF(false);
-    fTrackCutsPosPion->SetMinimalBooking(false);
-    fTrackCutsPosPion->SetPlotDCADist(true);
-
-    if ( isMC && MCtemplatefit ) {
-        //fTrackCutsPosPion->SetPlotContrib(true);
-        fTrackCutsPosPion->CheckParticleMothers(true);
-        fTrackCutsPosPion->SetPlotDCADist(true);
-        //fTrackCutsPosPion->SetOriginMultiplicityHists(true);
-        fTrackCutsPosPion->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
-    }
-
-    AliFemtoDreamTrackCuts *fTrackCutsNegPion=new AliFemtoDreamTrackCuts();
-    fTrackCutsNegPion->SetIsMonteCarlo(isMC);
-    fTrackCutsNegPion->SetCutCharge(-1);
-    fTrackCutsNegPion->SetPtRange(0.14, 4.0);
-    fTrackCutsNegPion->SetEtaRange(-0.8, 0.8);
-    fTrackCutsNegPion->SetNClsTPC(80);
-    fTrackCutsNegPion->SetDCAReCalculation(true);
+    AliFemtoDreamTrackCuts *fTrackCutsProton = new AliFemtoDreamTrackCuts();
+    fTrackCutsProton->SetIsMonteCarlo(isMC);
+    fTrackCutsProton->SetCutCharge(1);
+    fTrackCutsProton->SetPtRange(0.14, 4.0);
+    fTrackCutsProton->SetEtaRange(-0.8, 0.8);
+    fTrackCutsProton->SetNClsTPC(80);
+    fTrackCutsProton->SetDCAReCalculation(true);//Get the dca from the PropagateToVetex
     if ( !MCtemplatefit ) {
-        fTrackCutsNegPion->SetFilterBit(96);
-        fTrackCutsNegPion->SetDCAVtxZ(0.3);
-        fTrackCutsNegPion->SetDCAVtxXY(0.3);
+        fTrackCutsProton->SetFilterBit(96); // Filterbit 5+6
+        fTrackCutsProton->SetDCAVtxZ(0.3);
+        fTrackCutsProton->SetDCAVtxXY(0.3);
     } else {
-        fTrackCutsNegPion->SetFilterBit(128);
+        fTrackCutsProton->SetFilterBit(128); // Filterbit 7
     }
-    if ( doSharedCut ) { fTrackCutsNegPion->SetCutSharedCls(true);}
-    fTrackCutsNegPion->SetNClsTPC(80);
-    fTrackCutsNegPion->SetPID(AliPID::kPion, 0.5);
-    fTrackCutsNegPion->SetRejLowPtPionsTOF(false);
-    fTrackCutsNegPion->SetMinimalBooking(false);
-    fTrackCutsNegPion->SetPlotDCADist(true);
+    if ( doSharedCut ) { fTrackCutsProton->SetCutSharedCls(true);}
+    fTrackCutsProton->SetNClsTPC(80); // In Indico + additional Chi²/NDF <4
+    fTrackCutsProton->SetPID(AliPID::kProton, 0.5);
+    fTrackCutsProton->SetRejLowPtPionsTOF(true);
+    fTrackCutsProton->SetMinimalBooking(false);
+    fTrackCutsProton->SetPlotDCADist(true);
 
     if ( isMC && MCtemplatefit ) {
-        //fTrackCutsNegPion->SetPlotContrib(true);
-        fTrackCutsNegPion->CheckParticleMothers(true);
-        fTrackCutsNegPion->SetPlotDCADist(true);
-        //fTrackCutsNegPion->SetOriginMultiplicityHists(true);
-        fTrackCutsNegPion->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
+        //fTrackCutsProton->SetPlotContrib(true);
+        fTrackCutsProton->CheckParticleMothers(true);
+        fTrackCutsProton->SetPlotDCADist(true);
+        //fTrackCutsProton->SetOriginMultiplicityHists(true);
+        fTrackCutsProton->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
     }
-    std::vector<int> PDGParticles;
-    PDGParticles.push_back(211); // pi+
-    PDGParticles.push_back(-211); // pi-
+
+    AliFemtoDreamTrackCuts *fTrackCutsAntiproton = new AliFemtoDreamTrackCuts();
+    fTrackCutsAntiproton->SetIsMonteCarlo(isMC);
+    fTrackCutsAntiproton->SetCutCharge(-1);
+    fTrackCutsAntiproton->SetPtRange(0.14, 4.0);
+    fTrackCutsAntiproton->SetEtaRange(-0.8, 0.8);
+    fTrackCutsAntiproton->SetNClsTPC(80);
+    fTrackCutsAntiproton->SetDCAReCalculation(true);
+    if ( !MCtemplatefit ) {
+        fTrackCutsAntiproton->SetFilterBit(96);
+        fTrackCutsAntiproton->SetDCAVtxZ(0.3);
+        fTrackCutsAntiproton->SetDCAVtxXY(0.3);
+    } else {
+        fTrackCutsAntiproton->SetFilterBit(128);
+    }
+    if ( doSharedCut ) { fTrackCutsAntiproton->SetCutSharedCls(true);}
+    fTrackCutsAntiproton->SetNClsTPC(80);
+    fTrackCutsAntiproton->SetPID(AliPID::kProton, 0.5);
+    fTrackCutsAntiproton->SetRejLowPtPionsTOF(true); // check if func exists
+    fTrackCutsAntiproton->SetMinimalBooking(false);
+    fTrackCutsAntiproton->SetPlotDCADist(true);
+
+    if ( isMC && MCtemplatefit ) {
+        //fTrackCutsAntiproton->SetPlotContrib(true);
+        fTrackCutsAntiproton->CheckParticleMothers(true);
+        fTrackCutsAntiproton->SetPlotDCADist(true);
+        //fTrackCutsAntiproton->SetOriginMultiplicityHists(true);
+        fTrackCutsAntiproton->SetFillQALater(false); //Be careful about this flag! When the MinimalBooking is set
+    }
+    /* std::vector<int> PDGParticles;
+    PDGParticles.push_back(2212); // p+
+    PDGParticles.push_back(-2212); // p-
 
     std::vector<float> ZVtxBins;
     if(isRun1) ZVtxBins.push_back(-10);
@@ -176,35 +227,29 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
     kMax.push_back(3.);
     kMax.push_back(3.);
     kMax.push_back(3.);
-    //pair rejection
+    //pair rejection ---> CHECK AND ADJUST
     std::vector<bool> closeRejection;
     closeRejection.push_back(true); // pi+ pi+
     closeRejection.push_back(false); // pi+ pi-
     closeRejection.push_back(true); // pi- pi-
 
-    if (suffix == "5") {
-        //Deactivate the ClosePairRejection
-        fdPhidEta=0.;
-        closeRejection.clear();
-        closeRejection.push_back(false); // pi+ pi+
-        closeRejection.push_back(false); // pi+ pi-
-        closeRejection.push_back(false); // pi- pi-
-    }
+    // if (suffix == "5") {
+    //     //Deactivate the ClosePairRejection
+    //     fdPhidEta=0.;
+    //     closeRejection.clear();
+    //     closeRejection.push_back(false); // pi+ pi+
+    //     closeRejection.push_back(false); // pi+ pi-
+    //     closeRejection.push_back(false); // pi- pi-
+    // }
 
     //QA plots for tracks
     std::vector<int> pairQA;
     pairQA.push_back(11); // pi+ pi+
     pairQA.push_back(11); // pi+ pi-
-    pairQA.push_back(11); // pi- pi-
-
-    //QA plots for tracks
-    std::vector<int> pairQA;
-    pairQA.push_back(11); // pi+ pi+
-    pairQA.push_back(11); // pi+ pi-
-    pairQA.push_back(11); // pi- pi-
+    pairQA.push_back(11); // pi- pi- */
 
     AliFemtoDreamCollConfig *config=new AliFemtoDreamCollConfig("Femto","Femto");
-    config->SetZBins(ZVtxBins);
+    /* config->SetZBins(ZVtxBins);
     config->SetMultBins(MultBins);
     config->SetMultBinning(true);
     config->SetPDGCodes(PDGParticles);
@@ -225,43 +270,28 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
     config->SetkTandMultPtBinning(true);
     if(isMC) config->SetkTandMultMCTrueBinning(true);
     config->SetdPhidEtaPlotsSmallK(true);
-    config->SetPhiEtaBinnign(true); */
+    config->SetPhiEtaBinnign(true);
+    
+    if (isMC) {
+        config->SetMomentumResolution(true);
+        } else {
+        std::cout << "You are trying to request the Momentum Resolution without MC Info; fix it wont work! \n";
+        }
+        if (isMC) {
+        config->SetPhiEtaBinnign(true);
+        } else {
+        std::cout << "You are trying to request the Eta Phi Plots without MC Info; fix it wont work! \n";
+    } */
 
-//===============================================================================================================
+    //===============================================================================================================
 
     //Event Handler, PID & Centrality
+    
     EventHandler(mgr);
     LoadPIDResponse();
 
-    /* if(CentEst == "kInt7"){
-        if(isRun1) {
-            task->SetTrigger(AliVEvent::kMB);
-            task->SelectCollisionCandidates(AliVEvent::kMB);
-            std::cout << "Added kMB Trigger \n";
-        } else {
-            task->SetTrigger(AliVEvent::kINT7);
-            task->SelectCollisionCandidates(AliVEvent::kINT7);
-            std::cout << "Added kINT7 Trigger \n";
-        }
-    } else if (CentEst == "kHM") {
-        task->SelectCollisionCandidates(AliVEvent::kHighMultV0);
-        std::cout << "Added kHighMultV0 Trigger \n";
-    }else{
-        std::cout << "=====================================================================" << std::endl;
-        std::cout << "=====================================================================" << std::endl;
-        std::cout << "Centrality Estimator not set, fix it else your Results will be empty!" << std::endl;
-        std::cout << "=====================================================================" << std::endl;
-        std::cout << "=====================================================================" << std::endl;
-    }
-
-    task->SetEventCuts(evtCuts);
-    task->SetTrackCutsPosPion(fTrackCutsPosPion);
-    task->SetTrackCutsNegPion(fTrackCutsNegPion);
-    task->SetCollectionConfig(config);
-    task->SetIsMC(isMC); */
-
     //Analysis Task
-    LoadAnalysisTask(mgr);
+    LoadAnalysisTask(mgr, CentEst, isRun1, evtCuts, config, fTrackCutsProton, fTrackCutsAntiproton, effort);
 
     //Start analysis
     if (!mgr->InitAnalysis())  return;
@@ -269,7 +299,7 @@ void runAnalysisJetFemto (const char *mode="full", Bool_t merge=kTRUE)  {
     mgr->StartAnalysis("grid");
 };
 //___________________________________________________________________________________________________________________________________________
-AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge )  {
+AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge, int effort )  {
 
     //Alien Handler
     AliAnalysisAlien *alien = new AliAnalysisAlien();
@@ -281,17 +311,17 @@ AliAnalysisGrid *CreateAlienHandler (const char *mode, Bool_t merge )  {
     alien->SetAliPhysicsVersion(ALIPHYSICS_VER);
     alien->AddIncludePath("$ALICE_PHYSICS/include");
     alien->AddIncludePath("$ALICE_ROOT/include");
-    alien->SetGridDataDir("/alice/data/2011/LHC11h_2");
+    alien->SetGridDataDir("/alice/data/2018/LHC18b");
     alien->SetRunPrefix("000");
-    alien->SetDataPattern("*ESDs/pass2/AOD145/*AOD.root");
-    alien->AddRunNumber(167813);
+    alien->SetDataPattern("*pass2/AOD/*AliAOD.root");
+    SetInputRuns(alien, mode, effort);
     alien->SetNrunsPerMaster(nRunsPerMaster);
     alien->SetGridWorkingDir(Form("%s",GRIDWorkingDir));
     alien->SetGridOutputDir("OUTPUT");
     alien->SetAnalysisSource(Form("%s.cxx",AnalysisTask));
     alien->SetAdditionalLibs(Form("%s.cxx  %s.h",AnalysisTask,AnalysisTask));
     alien->SetMergeViaJDL(merge);
-    alien->SetMaxMergeStages(1);
+    alien->SetMaxMergeStages(2);
     alien->SetAnalysisMacro(Form("%s.C",AnalysisMacro));
     alien->SetSplitMaxInputFileNumber(50);
     alien->SetMasterResubmitThreshold(90);
@@ -317,3 +347,18 @@ void LoadPIDResponse ()  {
     AliAnalysisTaskPIDResponse *pidTask = AddTaskPIDResponse(isMC);
 }
 //___________________________________________________________________________________________________________________________________________
+void SetInputRuns (AliAnalysisAlien *alien, const char *mode, int effort) {
+    Int_t run0[] = { 285447, 285396, 285365, 285364, 285347, 285328, 285327, 285224, 285222, 285203, 285202, 285200, 285165, 285127, 285125, 285108, 285106, 285066, 285065, 285064, 285015, 285014, 285013, 285012, 285011, 285010, 285009, 285008 };
+    Int_t nRuns(0);
+    nRuns = sizeof(run0)/sizeof(Int_t);
+
+    if(effort==0) {
+        alien->AddRunNumber(285365);
+    } else if(effort==1) {
+        for(Int_t iRun=0; iRun<nRuns; iRun++) {
+            alien->AddRunNumber(run0[iRun]);
+        }
+    } else {
+        printf("#####         No valid option: effort!         #####\n");
+    }
+}
